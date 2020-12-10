@@ -1,5 +1,6 @@
 #include <iostream>
 #include "ReputationDynamics.hpp"
+#include "Game.hpp"
 
 int main() {
   std::cout << "Hello" << std::endl;
@@ -23,10 +24,17 @@ int main() {
     Reputation::G, Reputation::N, Reputation::B, Reputation::G, Reputation::G, Reputation::G,
     Reputation::N, Reputation::G, Reputation::N, Reputation::N, Reputation::N, Reputation::G
   });
-  std::cout << rd.Inspect() << std::endl;
+  std::cout << rd.Inspect();
+  std::cout << rd.RepAt(Reputation::N, Reputation::B, Action::D) << std::endl;
   std::cout << rd.ID() << std::endl;
 
   ReputationDynamics rd2(rd.ID());
   assert(rd2.ID() == rd.ID());
+
+  // test Game
+  Game g(0.02, 0.02, rd, p);
+  std::cout << g.Inspect();
+  auto ht = g.CalcHStarResident();
+  std::cout << ht[0] << ' ' << ht[1] << ' ' << ht[2] << std::endl;
   return 0;
 }

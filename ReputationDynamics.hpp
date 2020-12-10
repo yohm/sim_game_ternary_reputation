@@ -1,3 +1,6 @@
+#ifndef REPUTATION_DYNAMICS_HPP
+#define REPUTATION_DYNAMICS_HPP
+
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -128,3 +131,5 @@ class ReputationDynamics {
 
   std::array<Reputation,18> reputations;
 };
+
+#endif
