@@ -1,12 +1,19 @@
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <array>
+
+
 enum class Action {
   D = 0,  // defect
-  C       // cooperate
+  C = 1   // cooperate
 };
 
 enum class Reputation {
   B = 0,   // bad
-  N,       // normal
-  G        // good
+  N = 1,   // normal
+  G = 2    // good
 };
 
 char A2C(Action a) {
@@ -37,3 +44,87 @@ std::ostream &operator<<(std::ostream &os, const Reputation &rep) {
   os << R2C(rep);
   return os;
 }
+
+class ActionRule {
+  public:
+  ActionRule(const std::array<Action,9>& acts) : actions(acts) {};
+  ActionRule(int id) {
+    if (id >= 512 || id < 0) { throw std::runtime_error("invalid ID for ActionRule"); }
+    for (size_t i = 0; i < 9; i++) {
+      if (id & (1ul << i)) { actions[i] = static_cast<Action>(1); }
+      else { actions[i] = static_cast<Action>(0); }
+    }
+  }
+  Action ActAt(const Reputation& rep_d, const Reputation& rep_r) const {
+    size_t idx = 0;
+    idx += static_cast<size_t>(rep_d) * 3;
+    idx += static_cast<size_t>(rep_r);
+    return actions[idx];
+  }
+
+  std::string Inspect() const {
+    std::stringstream ss;
+    for (size_t i = 0; i < 9; i++) {
+      Reputation rep_d = static_cast<Reputation>(i / 3);
+      Reputation rep_r = static_cast<Reputation>(i % 3);
+      ss << "(" << rep_d << "->" << rep_r << ") : " << actions[i];
+      if (i % 3 == 2) { ss << std::endl; }
+      else { ss << "\t"; }
+    }
+    return ss.str();
+  }
+
+  int ID() const {
+    int ans = 0;
+    for (size_t i = 0; i < 9; i++) {
+      ans += static_cast<int>(actions[i]) << i;
+    }
+    return ans;
+  }
+
+  std::array<Action,9> actions;
+};
+
+class ReputationDynamics {
+  public:
+  ReputationDynamics(const std::array<Reputation,18> reps) : reputations(reps) {};
+  ReputationDynamics(int id) {
+    // 3^18 = 387420489
+    if (id >= 387420489 || id < 0) { throw std::runtime_error("invalid ID for ReputationDynamics"); }
+    for (size_t i = 0; i < 18; i++) {
+      reputations[i] = static_cast<Reputation>(id % 3);
+      id /= 3;
+    }
+  }
+  Reputation RepAt(const Reputation& rep_d, const Reputation& rep_r, const Action& act) const {
+    size_t idx = 0;
+    idx += static_cast<size_t>(rep_d) * 6;
+    idx += static_cast<size_t>(rep_r) * 2;
+    idx += static_cast<size_t>(act);
+    return reputations[idx];
+  }
+
+  std::string Inspect() const {
+    std::stringstream ss;
+    for (size_t i = 0; i < 18; i++) {
+      Reputation rep_d = static_cast<Reputation>(i / 6);
+      Reputation rep_r = static_cast<Reputation>((i/2) % 3);
+      Action act = static_cast<Action>(i % 2);
+      ss << "(" << rep_d << "->" << rep_r << "," << act << ") : " << reputations[i];
+      if (i % 6 == 5) { ss << std::endl; }
+      else { ss << "\t"; }
+    }
+    return ss.str();
+  }
+
+  int ID() const {
+    int ans = 0;
+    for (int i = 17; i >= 0; i--) {
+      ans *= 3;
+      ans += static_cast<int>(reputations[i]);
+    }
+    return ans;
+  }
+
+  std::array<Reputation,18> reputations;
+};
