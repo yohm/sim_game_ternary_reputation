@@ -27,11 +27,12 @@ class Game {
         std::cerr << t << ' ' << ht[0] << ' ' << ht[1] << ' ' << ht[2] << std::endl;
       }
       v3_t k1 = HdotResident(ht);
+      /*  // Euler method
       for (int i = 0; i < 3; i++) {
         ht[i] += k1[i] * dt;
       }
+       */
 
-      /*
       v3_t arg2;
       for(int i = 0; i < 3; i++) {
         k1[i] *= dt;
@@ -59,7 +60,6 @@ class Game {
         delta[i] = (k1[i] + 2.0*k2[i] + 2.0*k3[i] + k4[i]) / 6.0;
         ht[i] += delta[i];
       }
-       */
     }
     return ht;
   }
@@ -75,19 +75,9 @@ class Game {
         Reputation Y = static_cast<Reputation>(j);
         for (int k = 0; k < 3; k++) {
           Reputation Z = static_cast<Reputation>(k);
-          if (rd.RepAt(X, Y, ar.ActAt(X, Y)) == Z) {
-            if (rd.RepAt(X, Y, Action::D) == Z) {
-              ht_dot[k] += ht[i] * ht[j] * (1.0 - mu_a);
-            } else {
-              ht_dot[k] += ht[i] * ht[j] * ((1.0 - 2.0 * mu_a) * (1.0 - mu_e) + mu_a);
-            }
-          } else {
-            if (rd.RepAt(X, Y, Action::D) == Z) {
-              ht_dot[k] += ht[i] * ht[j] * ((1.0 - 2.0 * mu_a) * mu_e + mu_a);
-            } else {
-              ht_dot[k] += ht[i] * ht[j] * mu_a;
-            }
-          }
+          int b1 = (rd.RepAt(X, Y, ar.ActAt(X, Y)) == Z) ? 1 : 0;
+          int b2 = (rd.RepAt(X, Y, Action::D) == Z) ? 1 : 0;
+          ht_dot[k] += ht[i] * ht[j] * ( (1.0-1.5*mu_a)*((1.0-mu_e)*b1+ mu_e*b2) + 0.5*mu_a);
         }
       }
     }
