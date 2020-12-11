@@ -23,7 +23,7 @@ class Game {
   double mu_e, mu_a;
   ReputationDynamics rd;
   ActionRule res_ar;
-  std::array<double,3> h_star; // equilibrium reputation of residnet species
+  std::array<double,3> h_star; // equilibrium reputation of resident species
   double res_coop_prob;
   std::array<double,3> HStarMutant(const ActionRule& mutant_action_rule) const {
     std::function<std::array<double,3>(std::array<double,3>)> func = [this,&mutant_action_rule](std::array<double,3> x) {
