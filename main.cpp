@@ -34,7 +34,12 @@ int main() {
   // test Game
   Game g(0.02, 0.02, rd, p);
   std::cout << g.Inspect();
-  auto ht = g.CalcHStarResident();
+  auto ht = g.h_star;
   std::cout << ht[0] << ' ' << ht[1] << ' ' << ht[2] << std::endl;
+  std::cout << g.res_coop_prob << std::endl;
+
+  ActionRule mut(288);
+  auto mut_h = g.HStarMutant(mut);
+  std::cout << mut_h[0] << ' ' << mut_h[1] << ' ' << mut_h[2] << std::endl;
   return 0;
 }
