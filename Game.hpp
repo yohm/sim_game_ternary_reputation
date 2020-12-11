@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <cmath>
 #include "ReputationDynamics.hpp"
 
 
@@ -74,6 +75,7 @@ class Game {
     v3_t ht = {1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0};
     const size_t N_ITER = 10000;
     double dt = 0.002;
+    const double conv_tolerance = 1.0e-4 * dt;
     for (size_t t = 0; t < N_ITER; t++) {
       if (t % 100 == 99) {
         std::cerr << t << ' ' << ht[0] << ' ' << ht[1] << ' ' << ht[2] << std::endl;
@@ -104,6 +106,11 @@ class Game {
       for (int i = 0; i < 3; i++) {
         delta[i] = (k1[i] + 2.0*k2[i] + 2.0*k3[i] + k4[i]) / 6.0;
         ht[i] += delta[i];
+      }
+      if (std::abs(delta[0]) < conv_tolerance &&
+          std::abs(delta[1]) < conv_tolerance &&
+          std::abs(delta[2]) < conv_tolerance) {
+        break;
       }
     }
     return ht;
