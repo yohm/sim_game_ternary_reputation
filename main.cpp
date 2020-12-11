@@ -43,5 +43,30 @@ int main() {
   std::cout << mut_h[0] << ' ' << mut_h[1] << ' ' << mut_h[2] << std::endl;
 
   std::cout << g.IsESS(2.0, 1.0);
+
+  // construct leading eight
+  {
+    // GGC => G, GBC => *, BGC => G, BBC => *
+    // GGD => B, GBD => G, BGD => B, BBD => *
+    // action rule: GG => C, GB => D, BG => C, BB => **
+    ReputationDynamics l1({
+                            Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::G,
+                            Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::G,
+                            Reputation::G, Reputation::B, Reputation::G, Reputation::B, Reputation::B, Reputation::G
+                          });
+    ActionRule ar1({
+                     Action::D, Action::D, Action::C,
+                     Action::D, Action::D, Action::C,
+                     Action::D, Action::D, Action::C
+                   });
+    Game g2(0.02, 0.02, l1, ar1);
+    std::cout << g2.rd.Inspect();
+    std::cout << g2.res_ar.Inspect();
+    std::cout << g2.h_star[0] << ' ' << g2.h_star[1] << ' ' << g2.h_star[2] << std::endl;
+    std::cout << g2.res_coop_prob << std::endl;
+    std::cout << g2.IsESS(2.0, 1.0) << std::endl;
+  }
+
+
   return 0;
 }
