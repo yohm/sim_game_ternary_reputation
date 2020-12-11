@@ -41,5 +41,7 @@ int main() {
   ActionRule mut(288);
   auto mut_h = g.HStarMutant(mut);
   std::cout << mut_h[0] << ' ' << mut_h[1] << ' ' << mut_h[2] << std::endl;
+
+  std::cout << g.IsESS(2.0, 1.0);
   return 0;
 }

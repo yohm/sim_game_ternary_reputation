@@ -11,7 +11,7 @@ class Game {
   public:
   Game(double mu_e, double mu_a, const ReputationDynamics& rd, const ActionRule& ar) : mu_e(mu_e), mu_a(mu_a), rd(rd), res_ar(ar) {
     h_star = CalcHStarResident();
-    res_coop_prob = CooperationProb(res_ar, h_star);
+    res_coop_prob = CooperationProb(res_ar, h_star, h_star);
   }
   std::string Inspect() const {
     std::stringstream ss;
@@ -24,7 +24,24 @@ class Game {
   ReputationDynamics rd;
   ActionRule res_ar;
   std::array<double,3> h_star; // equilibrium reputation of resident species
-  double res_coop_prob;
+  double res_coop_prob;  // cooperation probability of resident species
+  bool IsESS(double benefit, double cost) const {
+    double res_payoff = (benefit-cost) * res_coop_prob;
+    for (int i = 0; i < 512; i++) {
+      std::cerr << "checking mutant " << i << std::endl;
+      if (i == res_ar.ID()) continue;
+      ActionRule mut_ar(i);
+      if (Payoff(mut_ar, benefit, cost) > res_payoff) { return false; }
+    }
+    return true;
+  }
+  double Payoff(const ActionRule& mutant, double benefit, double cost) const {
+    std::array<double,3> mut_rep = HStarMutant(mutant);
+    // cooperation probability of mutant against resident
+    double mut_res_coop = CooperationProb(mutant, mut_rep, h_star); // cooperation prob of mutant for resident
+    double res_mut_coop = CooperationProb(res_ar, h_star, mut_rep); // cooperation prob of resident for mutant
+    return benefit * res_mut_coop - cost * mut_res_coop;
+  }
   std::array<double,3> HStarMutant(const ActionRule& mutant_action_rule) const {
     std::function<std::array<double,3>(std::array<double,3>)> func = [this,&mutant_action_rule](std::array<double,3> x) {
       return HdotMutant(x, mutant_action_rule);
@@ -77,9 +94,11 @@ class Game {
     double dt = 0.002;
     const double conv_tolerance = 1.0e-4 * dt;
     for (size_t t = 0; t < N_ITER; t++) {
+#ifdef DEBUG
       if (t % 100 == 99) {
         std::cerr << t << ' ' << ht[0] << ' ' << ht[1] << ' ' << ht[2] << std::endl;
       }
+#endif
       v3_t k1 = func(ht);
       v3_t arg2;
       for(int i = 0; i < 3; i++) {
@@ -115,14 +134,14 @@ class Game {
     }
     return ht;
   }
-  double CooperationProb(const ActionRule& mut_ar, const std::array<double,3>& mut_h_star) {
+  double CooperationProb(const ActionRule& donor_action, const std::array<double,3>& donor_reputation, const std::array<double,3>& recip_reputation) const {
     double sum = 0.0;
     for (int i = 0; i < 3; i++) {
       Reputation X = static_cast<Reputation>(i);
       for (int j = 0; j < 3; j++) {
         Reputation Y = static_cast<Reputation>(j);
-        if (mut_ar.ActAt(X, Y) == Action::C) {
-          sum += mut_h_star[i] * h_star[j];
+        if (donor_action.ActAt(X, Y) == Action::C) {
+          sum += donor_reputation[i] * recip_reputation[j];
         }
       }
     }
