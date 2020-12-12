@@ -73,6 +73,7 @@ class ActionRule {
 
   std::string Inspect() const {
     std::stringstream ss;
+    ss << "ActionRuleID: " << ID() << std::endl;
     for (size_t i = 0; i < 9; i++) {
       Reputation rep_d = static_cast<Reputation>(i / 3);
       Reputation rep_r = static_cast<Reputation>(i % 3);
@@ -93,6 +94,9 @@ class ActionRule {
 
   std::array<Action,9> actions;
 };
+
+bool operator==(const ActionRule& t1, const ActionRule& t2) { return t1.ID() == t2.ID(); }
+bool operator!=(const ActionRule& t1, const ActionRule& t2) { return !(t1 == t2); }
 
 class ReputationDynamics {
   public:
@@ -122,6 +126,7 @@ class ReputationDynamics {
 
   std::string Inspect() const {
     std::stringstream ss;
+    ss << "ReputationDynamicsID: " << ID() << std::endl;
     for (size_t i = 0; i < 18; i++) {
       Reputation rep_d = static_cast<Reputation>(i / 6);
       Reputation rep_r = static_cast<Reputation>((i/2) % 3);
@@ -144,5 +149,7 @@ class ReputationDynamics {
 
   std::array<Reputation,18> reputations;
 };
+bool operator==(const ReputationDynamics& t1, const ReputationDynamics& t2) { return t1.ID() == t2.ID(); }
+bool operator!=(const ReputationDynamics& t1, const ReputationDynamics& t2) { return !(t1 == t2); }
 
 #endif
