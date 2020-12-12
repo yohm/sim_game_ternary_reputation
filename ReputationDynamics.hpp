@@ -64,6 +64,12 @@ class ActionRule {
     idx += static_cast<size_t>(rep_r);
     return actions[idx];
   }
+  void SetAction(const Reputation& rep_d, const Reputation& rep_r, const Action& act) {
+    size_t idx = 0;
+    idx += static_cast<size_t>(rep_d) * 3;
+    idx += static_cast<size_t>(rep_r);
+    actions[idx] = act;
+  }
 
   std::string Inspect() const {
     std::stringstream ss;
@@ -105,6 +111,13 @@ class ReputationDynamics {
     idx += static_cast<size_t>(rep_r) * 2;
     idx += static_cast<size_t>(act);
     return reputations[idx];
+  }
+  void SetRep(const Reputation& rep_d, const Reputation& rep_r, const Action& act, const Reputation& new_rep) {
+    size_t idx = 0;
+    idx += static_cast<size_t>(rep_d) * 6;
+    idx += static_cast<size_t>(rep_r) * 2;
+    idx += static_cast<size_t>(act);
+    reputations[idx] = new_rep;
   }
 
   std::string Inspect() const {

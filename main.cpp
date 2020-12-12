@@ -34,9 +34,9 @@ int main() {
   // test Game
   Game g(0.02, 0.02, rd, p);
   std::cout << g.Inspect();
-  auto ht = g.h_star;
+  auto ht = g.ResidentEqReputation();
   std::cout << ht[0] << ' ' << ht[1] << ' ' << ht[2] << std::endl;
-  std::cout << g.res_coop_prob << std::endl;
+  std::cout << g.ResidentCoopProb() << std::endl;
 
   ActionRule mut(288);
   auto mut_h = g.HStarMutant(mut);
@@ -60,13 +60,12 @@ int main() {
                      Action::D, Action::D, Action::C
                    });
     Game g2(0.02, 0.02, l1, ar1);
-    std::cout << g2.rd.Inspect();
-    std::cout << g2.res_ar.Inspect();
-    std::cout << g2.h_star[0] << ' ' << g2.h_star[1] << ' ' << g2.h_star[2] << std::endl;
-    std::cout << g2.res_coop_prob << std::endl;
+    std::cout << g2.rep_dynamics.Inspect();
+    std::cout << g2.resident_ar.Inspect();
+    auto res_h = g2.ResidentEqReputation();
+    std::cout << res_h[0] << ' ' << res_h[1] << ' ' << res_h[2] << std::endl;
+    std::cout << g2.ResidentCoopProb() << std::endl;
     std::cout << g2.IsESS(2.0, 1.0) << std::endl;
   }
-
-
   return 0;
 }
