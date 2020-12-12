@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 #include <array>
+#include <cstdint>
 
 
 enum class Action {
@@ -51,8 +52,8 @@ std::ostream &operator<<(std::ostream &os, const Reputation &rep) {
 class ActionRule {
   public:
   ActionRule(const std::array<Action,9>& acts) : actions(acts) {};
-  ActionRule(int id) {
-    if (id >= 512 || id < 0) { throw std::runtime_error("invalid ID for ActionRule"); }
+  ActionRule(uint64_t id) {
+    if (id >= 512) { throw std::runtime_error("invalid ID for ActionRule"); }
     for (size_t i = 0; i < 9; i++) {
       if (id & (1ul << i)) { actions[i] = static_cast<Action>(1); }
       else { actions[i] = static_cast<Action>(0); }
@@ -84,10 +85,10 @@ class ActionRule {
     return ss.str();
   }
 
-  int ID() const {
+  uint64_t ID() const {
     int ans = 0;
     for (size_t i = 0; i < 9; i++) {
-      ans += static_cast<int>(actions[i]) << i;
+      ans += static_cast<uint64_t>(actions[i]) << i;
     }
     return ans;
   }
@@ -101,9 +102,9 @@ bool operator!=(const ActionRule& t1, const ActionRule& t2) { return !(t1 == t2)
 class ReputationDynamics {
   public:
   ReputationDynamics(const std::array<Reputation,18> reps) : reputations(reps) {};
-  ReputationDynamics(int id) {
+  ReputationDynamics(uint64_t id) {
     // 3^18 = 387420489
-    if (id >= 387420489 || id < 0) { throw std::runtime_error("invalid ID for ReputationDynamics"); }
+    if (id >= 387420489ull) { throw std::runtime_error("invalid ID for ReputationDynamics"); }
     for (size_t i = 0; i < 18; i++) {
       reputations[i] = static_cast<Reputation>(id % 3);
       id /= 3;
@@ -138,11 +139,14 @@ class ReputationDynamics {
     return ss.str();
   }
 
-  int ID() const {
+  uint64_t ID() const {
     int ans = 0;
-    for (int i = 17; i >= 0; i--) {
+    size_t i = 17;
+    while(true) {
       ans *= 3;
       ans += static_cast<int>(reputations[i]);
+      if (i == 0) break;
+      i--;
     }
     return ans;
   }

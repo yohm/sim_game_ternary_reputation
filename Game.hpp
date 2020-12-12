@@ -14,12 +14,22 @@ class Game {
     resident_h_star = CalcHStarResident();
     resident_coop_prob = CooperationProb(resident_ar, resident_h_star, resident_h_star);
   }
+  Game(double mu_e, double mu_a, uint64_t id) : mu_e(mu_e), mu_a(mu_a), rep_dynamics(id>>9ul), resident_ar(id&511ul) {
+    resident_h_star = CalcHStarResident();
+    resident_coop_prob = CooperationProb(resident_ar, resident_h_star, resident_h_star);
+  }
   std::string Inspect() const {
     std::stringstream ss;
-    ss << "(mu_e, mu_a): (" << mu_e << ", " << mu_a << ")" << std::endl
-       << "ReputationDynamics: " << std::endl << rep_dynamics.Inspect()
-       << "ActionRule: " << std::endl << resident_ar.Inspect();
+    ss << "GameID: " << ID() << std::endl
+       << "(mu_e, mu_a): (" << mu_e << ", " << mu_a << ")" << std::endl
+       << "--- " << rep_dynamics.Inspect()
+       << "--- " << resident_ar.Inspect();
     return ss.str();
+  }
+  uint64_t ID() const {
+    uint64_t ar_id = resident_ar.ID();
+    uint64_t rd_id = rep_dynamics.ID();
+    return (rd_id << 9) + ar_id;
   }
   const double mu_e, mu_a;
   const ReputationDynamics rep_dynamics;
