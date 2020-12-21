@@ -59,6 +59,7 @@ class ActionRule {
       else { actions[i] = static_cast<Action>(0); }
     }
   }
+  ActionRule Clone() const { return ActionRule(actions); }
   Action ActAt(const Reputation& rep_d, const Reputation& rep_r) const {
     size_t idx = 0;
     idx += static_cast<size_t>(rep_d) * 3;
@@ -101,7 +102,7 @@ bool operator!=(const ActionRule& t1, const ActionRule& t2) { return !(t1 == t2)
 
 class ReputationDynamics {
   public:
-  ReputationDynamics(const std::array<Reputation,18> reps) : reputations(reps) {};
+  ReputationDynamics(const std::array<Reputation,18>& reps) : reputations(reps) {};
   ReputationDynamics(uint64_t id) {
     // 3^18 = 387420489
     if (id >= 387420489ull) { throw std::runtime_error("invalid ID for ReputationDynamics"); }
@@ -110,6 +111,7 @@ class ReputationDynamics {
       id /= 3;
     }
   }
+  ReputationDynamics Clone() const { return ReputationDynamics(reputations); }
   Reputation RepAt(const Reputation& rep_d, const Reputation& rep_r, const Action& act) const {
     size_t idx = 0;
     idx += static_cast<size_t>(rep_d) * 6;
