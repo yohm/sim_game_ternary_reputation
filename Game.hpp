@@ -37,7 +37,7 @@ class Game {
   bool IsESS(double benefit, double cost) const {
     double res_payoff = (benefit-cost) * resident_coop_prob;
     for (int i = 0; i < 512; i++) {
-      if (i % 100 == 0 ) { std::cerr << "checking mutant " << i << std::endl; }
+      // if (i % 100 == 0 ) { std::cerr << "checking mutant " << i << std::endl; }
       if (i == resident_ar.ID()) continue;
       ActionRule mut_ar(i);
       if (MutantPayoff(mut_ar, benefit, cost) > res_payoff) { return false; }

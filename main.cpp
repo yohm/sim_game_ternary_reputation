@@ -1,43 +1,66 @@
 #include <iostream>
+#include <vector>
+#include <set>
 #include "ReputationDynamics.hpp"
 #include "Game.hpp"
 
-int main() {
-  // test Game
-  Game g(0.02, 0.02, rd, p);
-  std::cout << g.Inspect();
-  auto ht = g.ResidentEqReputation();
-  std::cout << ht[0] << ' ' << ht[1] << ' ' << ht[2] << std::endl;
-  std::cout << g.ResidentCoopProb() << std::endl;
 
-  ActionRule mut(288);
-  auto mut_h = g.HStarMutant(mut);
-  std::cout << mut_h[0] << ' ' << mut_h[1] << ' ' << mut_h[2] << std::endl;
-
-  std::cout << g.IsESS(2.0, 1.0);
-
-  // construct leading eight
-  {
-    // GGC => G, GBC => *, BGC => G, BBC => *
-    // GGD => B, GBD => G, BGD => B, BBD => *
-    // action rule: GG => C, GB => D, BG => C, BB => **
-    ReputationDynamics l1({
-                            Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::G,
-                            Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::G,
-                            Reputation::G, Reputation::B, Reputation::G, Reputation::B, Reputation::B, Reputation::G
-                          });
-    ActionRule ar1({
-                     Action::D, Action::D, Action::C,
-                     Action::D, Action::D, Action::C,
-                     Action::D, Action::D, Action::C
-                   });
-    Game g2(0.02, 0.02, l1, ar1);
-    std::cout << g2.rep_dynamics.Inspect();
-    std::cout << g2.resident_ar.Inspect();
-    auto res_h = g2.ResidentEqReputation();
-    std::cout << res_h[0] << ' ' << res_h[1] << ' ' << res_h[2] << std::endl;
-    std::cout << g2.ResidentCoopProb() << std::endl;
-    std::cout << g2.IsESS(2.0, 1.0) << std::endl;
+std::vector<ActionRule> ActionRuleCandidates(const ReputationDynamics& rd) {
+  // iteration over possible actions
+  ActionRule base(511);  // use AllC as a baseline
+  std::vector< std::pair<Reputation,Reputation> > free_pairs;
+  for (int i = 0; i < 3; i++) {
+    const Reputation X = static_cast<Reputation>(i);
+    for (int j = 0; j < 3; j++) {
+      const Reputation Y = static_cast<Reputation>(j);
+      if (X == Reputation::G && Y == Reputation::G) continue;  // GG => C is fixed
+      if (rd.RepAt(X, Y, Action::C) == rd.RepAt(X, Y, Action::D)) {
+        // When reputation remains same for both actions, there is no reason to cooperate
+        base.SetAction(X,Y, Action::D);
+      }
+      else {
+        free_pairs.emplace_back( std::make_pair(X,Y) );
+      }
+    }
   }
+
+  std::vector<ActionRule> ans;
+  size_t n_pairs = free_pairs.size();
+  for (size_t i = 0; i < (1ul<<n_pairs); i++) {
+    ActionRule ar = base.Clone();
+    for (size_t n = 0; n < n_pairs; n++) {
+      Reputation rep_donor = free_pairs[n].first;
+      Reputation rep_recip = free_pairs[n].second;
+      Action act = static_cast<Action>( (i & (1ul << n)) >> n );
+      ar.SetAction(rep_donor, rep_recip, act);
+    }
+    ans.push_back(ar);
+  }
+  return ans;
+}
+
+int main() {
+  const double mu_e = 0.02, mu_a = 0.02;
+
+  // when GGC => G and GGD => B are fixed, there are 3^16 = 43046721 types of reputation dynamics:
+  // Top most two bits are fixed: 2*3^17 + 0*3^16 = 258280326
+  uint64_t fixed_rep = 258280326ull;
+  for (size_t i = 0; i < 43046721; i += 100000) {
+    if (i % 10000 == 0) { std::cerr << i << std::endl; }
+    ReputationDynamics rd(fixed_rep + i);
+    assert(rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G);
+    assert(rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B);
+
+    std::vector<ActionRule> act_rules = ActionRuleCandidates(rd);
+    for (const ActionRule& ar: act_rules) {
+      Game g(mu_e, mu_a, rd, ar);
+      if (g.IsESS(2.0, 1.0)) {
+        std::cout << "ESS is found: " << g.Inspect();
+      }
+    }
+  }
+
+
+
   return 0;
 }
