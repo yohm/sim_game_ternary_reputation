@@ -3,6 +3,7 @@
 #include <set>
 #include <chrono>
 #include <fstream>
+#include "omp.h"
 #include "ReputationDynamics.hpp"
 #include "Game.hpp"
 
@@ -51,19 +52,26 @@ int main() {
 
   // when GGC => G and GGD => B are fixed, there are 3^16 = 43046721 types of reputation dynamics:
   // Top most two bits are fixed: 2*3^17 + 0*3^16 = 258280326
-  uint64_t fixed_rep = 258280326ull;
+  const uint64_t fixed_rep = 258280326ull;
+
+  #pragma omp parallel for shared(total_count,ess_count,ESS_ids) default(none) schedule(dynamic)
   for (size_t i = 0; i < 43046721; i += 500000) {
-    if (i % 10000 == 0) { std::cerr << i << std::endl; }
+    int th = omp_get_thread_num();
+    int num_threads = omp_get_num_threads();
+    if (i % 10000 == 0) { std::cerr << i << ' ' << th << ' ' << num_threads << std::endl; }
     ReputationDynamics rd(fixed_rep + i);
     assert(rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G);
     assert(rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B);
 
     std::vector<ActionRule> act_rules = ActionRuleCandidates(rd);
     for (const ActionRule& ar: act_rules) {
+      #pragma omp atomic update
       total_count++;
       Game g(mu_e, mu_a, rd, ar);
       if (g.IsESS(benefit, cost)) {
+        #pragma omp atomic update
         ess_count++;
+        #pragma omp critical
         ESS_ids.push_back(g.ID());
         std::cout << "ESS is found: " << g.Inspect();
       }
