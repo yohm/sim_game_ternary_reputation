@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <set>
+#include <chrono>
 #include "ReputationDynamics.hpp"
 #include "Game.hpp"
 
@@ -40,7 +41,11 @@ std::vector<ActionRule> ActionRuleCandidates(const ReputationDynamics& rd) {
 }
 
 int main() {
-  const double mu_e = 0.02, mu_a = 0.02;
+  auto start = std::chrono::system_clock::now();
+
+  const double mu_e = 0.02, mu_a = 0.02, benefit = 1.2, cost = 1.0;
+
+  uint64_t total_count = 0ull, ess_count = 0ull;
 
   // when GGC => G and GGD => B are fixed, there are 3^16 = 43046721 types of reputation dynamics:
   // Top most two bits are fixed: 2*3^17 + 0*3^16 = 258280326
@@ -53,14 +58,20 @@ int main() {
 
     std::vector<ActionRule> act_rules = ActionRuleCandidates(rd);
     for (const ActionRule& ar: act_rules) {
+      total_count++;
       Game g(mu_e, mu_a, rd, ar);
-      if (g.IsESS(2.0, 1.0)) {
+      if (g.IsESS(benefit, cost)) {
+        ess_count++;
         std::cout << "ESS is found: " << g.Inspect();
       }
     }
   }
 
+  std::cout << "ESS / total : " << ess_count << " / " << total_count << std::endl;
 
+  auto end = std::chrono::system_clock::now();
+  double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+  std::cout << "Elapsed time: " << elapsed / 1000.0 << std::endl;
 
   return 0;
 }

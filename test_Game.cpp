@@ -64,6 +64,8 @@ int main(int argc, char *argv[]) {
     assert(res_h[2] > 0.95);
     assert(g2.ResidentCoopProb() > 0.95);
     assert(g2.IsESS(2.0, 1.0));
+
+    assert(g2.IsESS(1.2, 1.0));
   }
 
   return 0;
