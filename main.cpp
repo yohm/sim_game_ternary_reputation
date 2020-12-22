@@ -2,6 +2,7 @@
 #include <vector>
 #include <set>
 #include <chrono>
+#include <fstream>
 #include "ReputationDynamics.hpp"
 #include "Game.hpp"
 
@@ -46,11 +47,12 @@ int main() {
   const double mu_e = 0.02, mu_a = 0.02, benefit = 1.2, cost = 1.0;
 
   uint64_t total_count = 0ull, ess_count = 0ull;
+  std::vector<uint64_t> ESS_ids;
 
   // when GGC => G and GGD => B are fixed, there are 3^16 = 43046721 types of reputation dynamics:
   // Top most two bits are fixed: 2*3^17 + 0*3^16 = 258280326
   uint64_t fixed_rep = 258280326ull;
-  for (size_t i = 0; i < 43046721; i += 100000) {
+  for (size_t i = 0; i < 43046721; i += 500000) {
     if (i % 10000 == 0) { std::cerr << i << std::endl; }
     ReputationDynamics rd(fixed_rep + i);
     assert(rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G);
@@ -62,12 +64,17 @@ int main() {
       Game g(mu_e, mu_a, rd, ar);
       if (g.IsESS(benefit, cost)) {
         ess_count++;
+        ESS_ids.push_back(g.ID());
         std::cout << "ESS is found: " << g.Inspect();
       }
     }
   }
 
   std::cout << "ESS / total : " << ess_count << " / " << total_count << std::endl;
+  std::sort(ESS_ids.begin(), ESS_ids.end());
+  std::ofstream fout("ESS_ids");
+  for (uint64_t x: ESS_ids) { fout << x << "\n"; }
+  fout.close();
 
   auto end = std::chrono::system_clock::now();
   double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
