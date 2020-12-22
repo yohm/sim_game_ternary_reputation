@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
   const uint64_t num_rep_dynamics_per_rank = std::ceil( (double)num_rep_dynamics / num_procs);
   const uint64_t start_idx = my_rank * num_rep_dynamics_per_rank;
   const uint64_t end_idx = (my_rank == num_procs-1) ? num_rep_dynamics : (my_rank + 1) * num_rep_dynamics_per_rank;
-  assert(start_idx > num_rep_dynamics);
+  assert(start_idx < num_rep_dynamics);
 
   #pragma omp parallel for shared(total_count,ess_count,ESS_ids) default(none) schedule(dynamic)
   for (size_t i = start_idx; i < end_idx; i += 500000) {
