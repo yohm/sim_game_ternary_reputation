@@ -4,6 +4,7 @@
 #include <chrono>
 #include <fstream>
 #include "omp.h"
+#include "mpi.h"
 #include "ReputationDynamics.hpp"
 #include "Game.hpp"
 
@@ -42,7 +43,17 @@ std::vector<ActionRule> ActionRuleCandidates(const ReputationDynamics& rd) {
   return ans;
 }
 
-int main() {
+
+int main(int argc, char *argv[]) {
+
+  // MPI initialization
+  MPI_Init(&argc, &argv);
+  int _my_rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &_my_rank);
+  int _num_procs = 0;
+  MPI_Comm_size(MPI_COMM_WORLD, &_num_procs);
+  const int my_rank = _my_rank, num_procs = _num_procs;
+
   auto start = std::chrono::system_clock::now();
 
   const double mu_e = 0.02, mu_a = 0.02, benefit = 1.2, cost = 1.0;
@@ -53,12 +64,18 @@ int main() {
   // when GGC => G and GGD => B are fixed, there are 3^16 = 43046721 types of reputation dynamics:
   // Top most two bits are fixed: 2*3^17 + 0*3^16 = 258280326
   const uint64_t fixed_rep = 258280326ull;
+  const uint64_t num_rep_dynamics = 43046721ull;
+
+  const uint64_t num_rep_dynamics_per_rank = std::ceil( (double)num_rep_dynamics / num_procs);
+  const uint64_t start_idx = my_rank * num_rep_dynamics_per_rank;
+  const uint64_t end_idx = (my_rank == num_procs-1) ? num_rep_dynamics : (my_rank + 1) * num_rep_dynamics_per_rank;
+  assert(start_idx > num_rep_dynamics);
 
   #pragma omp parallel for shared(total_count,ess_count,ESS_ids) default(none) schedule(dynamic)
-  for (size_t i = 0; i < 43046721; i += 500000) {
+  for (size_t i = start_idx; i < end_idx; i += 500000) {
     int th = omp_get_thread_num();
     int num_threads = omp_get_num_threads();
-    if (i % 10000 == 0) { std::cerr << i << ' ' << th << ' ' << num_threads << std::endl; }
+    if (true) { std::cerr << i << ' ' << th << '/' << num_threads << " : " << my_rank << '/' << num_procs << std::endl; }
     ReputationDynamics rd(fixed_rep + i);
     assert(rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G);
     assert(rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B);
@@ -73,20 +90,26 @@ int main() {
         ess_count++;
         #pragma omp critical
         ESS_ids.push_back(g.ID());
-        std::cout << "ESS is found: " << g.Inspect();
+        // std::cout << "ESS is found: " << g.Inspect();
       }
     }
   }
 
-  std::cout << "ESS / total : " << ess_count << " / " << total_count << std::endl;
+  std::cout << "ESS / total : " << ess_count << " / " << total_count << " at " << my_rank << " / " << num_procs << std::endl;
   std::sort(ESS_ids.begin(), ESS_ids.end());
-  std::ofstream fout("ESS_ids");
+
+  std::ostringstream os;
+  char buffer[20];
+  std::snprintf(buffer, sizeof(buffer), "ESS_ids_%06d", my_rank);
+  std::ofstream fout(buffer);
   for (uint64_t x: ESS_ids) { fout << x << "\n"; }
   fout.close();
 
   auto end = std::chrono::system_clock::now();
   double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-  std::cout << "Elapsed time: " << elapsed / 1000.0 << std::endl;
+  std::cout << "Elapsed time: " << elapsed / 1000.0 << " at " << my_rank << " / " << num_procs << std::endl;
+
+  MPI_Finalize();
 
   return 0;
 }

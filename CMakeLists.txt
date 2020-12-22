@@ -6,11 +6,13 @@ set(CMAKE_CXX_STANDARD 11)
 #set(CMAKE_VERBOSE_MAKEFILE 1)
 
 find_package(OpenMP REQUIRED)
+find_package(MPI REQUIRED)
 
 set(SOURCE_FILES ReputationDynamics.hpp Game.hpp)
 
+include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 add_executable(main.out main.cpp ${SOURCE_FILES})
-target_link_libraries(main.out PRIVATE OpenMP::OpenMP_CXX)
+target_link_libraries(main.out PRIVATE OpenMP::OpenMP_CXX ${MPI_LIBRARIES})
 
 add_executable(test_ReputationDynamics.out test_ReputationDynamics.cpp ReputationDynamics.hpp)
 
