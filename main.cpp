@@ -1,8 +1,10 @@
 #include <iostream>
 #include <vector>
 #include <set>
+#include <algorithm>
 #include <chrono>
 #include <fstream>
+#include <cassert>
 #include "omp.h"
 #include "mpi.h"
 #include "ReputationDynamics.hpp"

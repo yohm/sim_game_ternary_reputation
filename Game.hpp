@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
+#include <functional>
 #include "ReputationDynamics.hpp"
 
 
