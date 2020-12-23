@@ -40,6 +40,22 @@ int main(int argc, char *argv[]) {
     assert( Close(mut_h[2], 0.573) );
 
     assert( g.IsESS(2.0, 1.0) == false );
+
+    auto rep_act = g.TraceReputationAndAction(Reputation::B, Reputation::G);
+    assert( rep_act.first[0] == Reputation::B );
+    assert( rep_act.first[1] == Reputation::G );
+    assert( rep_act.first[2] == Reputation::G );
+    assert( rep_act.second[0] == Action::C );
+    assert( rep_act.second[1] == Action::C );
+    assert( rep_act.second[2] == Action::C );
+
+    auto rep_act2 = g.TraceReputationAndAction(Reputation::N, Reputation::G);
+    assert( rep_act2.first[0] == Reputation::N );
+    assert( rep_act2.first[1] == Reputation::G );
+    assert( rep_act2.first[2] == Reputation::G );
+    assert( rep_act2.second[0] == Action::D );
+    assert( rep_act2.second[1] == Action::C );
+    assert( rep_act2.second[2] == Action::C );
   }
 
   // construct leading eight
@@ -63,9 +79,24 @@ int main(int argc, char *argv[]) {
     auto res_h = g2.ResidentEqReputation();
     assert(res_h[2] > 0.95);
     assert(g2.ResidentCoopProb() > 0.95);
-    assert(g2.IsESS(2.0, 1.0));
 
     assert(g2.IsESS(1.2, 1.0));
+
+    auto rep_act = g2.TraceReputationAndAction(Reputation::B, Reputation::G);
+    assert( rep_act.first[0] == Reputation::B );
+    assert( rep_act.first[1] == Reputation::G );
+    assert( rep_act.first[2] == Reputation::G );
+    assert( rep_act.second[0] == Action::C );
+    assert( rep_act.second[1] == Action::C );
+    assert( rep_act.second[2] == Action::C );
+
+    auto rep_act2 = g2.TraceReputationAndAction(Reputation::N, Reputation::G);
+    assert( rep_act2.first[0] == Reputation::N );
+    assert( rep_act2.first[1] == Reputation::G );
+    assert( rep_act2.first[2] == Reputation::G );
+    assert( rep_act2.second[0] == Action::C );
+    assert( rep_act2.second[1] == Action::C );
+    assert( rep_act2.second[2] == Action::C );
   }
 
   return 0;

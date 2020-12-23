@@ -47,6 +47,17 @@ class Game {
   }
   v3d_t ResidentEqReputation() const { return resident_h_star; } // equilibrium reputation of resident species
   double ResidentCoopProb() const { return resident_coop_prob; } // cooperation probability between resident species
+  std::pair<std::array<Reputation,3>,std::array<Action,3>> TraceReputationAndAction(const Reputation& init, const Reputation& resident_rep) const {
+    std::array<Reputation,3> rep_hist;
+    std::array<Action,3> act_hist;
+    rep_hist[0] = init;
+    act_hist[0] = resident_ar.ActAt(rep_hist[0], resident_rep);
+    rep_hist[1] = rep_dynamics.RepAt(rep_hist[0], resident_rep, act_hist[0]);
+    act_hist[1] = resident_ar.ActAt(rep_hist[1], resident_rep);
+    rep_hist[2] = rep_dynamics.RepAt(rep_hist[1], resident_rep, act_hist[1]);
+    act_hist[2] = resident_ar.ActAt(rep_hist[2], resident_rep);
+    return std::make_pair(rep_hist, act_hist);
+  }
   double MutantPayoff(const ActionRule& mutant, double benefit, double cost) const {
     v3d_t mut_rep = HStarMutant(mutant);
     // cooperation probability of mutant against resident
