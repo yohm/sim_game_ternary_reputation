@@ -14,6 +14,8 @@ include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 add_executable(main.out main.cpp ${SOURCE_FILES})
 target_link_libraries(main.out PRIVATE OpenMP::OpenMP_CXX ${MPI_LIBRARIES})
 
+add_executable(analyze_ESS.out analyze_ESS.cpp ${SOURCE_FILES})
+
 add_executable(test_ReputationDynamics.out test_ReputationDynamics.cpp ReputationDynamics.hpp)
 
 add_executable(test_Game.out test_Game.cpp ReputationDynamics.hpp Game.hpp)
