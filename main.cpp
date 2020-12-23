@@ -82,8 +82,8 @@ int main(int argc, char *argv[]) {
 
   // when GGC => G and GGD => B are fixed, there are 3^16 = 43,046,721 types of reputation dynamics:
   // Top most two bits are fixed: 2*3^17 + 0*3^16 = 258280326
-  const uint64_t fixed_rep = 258280326ull;
-  const uint64_t num_rep_dynamics = 43046721ull;
+  const uint64_t fixed_rep = 258'280'326ull;
+  const uint64_t num_rep_dynamics = 43'046'721ull;
 
   const uint64_t num_rep_dynamics_per_rank = std::ceil( (double)num_rep_dynamics / num_procs);
   const uint64_t start_idx = my_rank * num_rep_dynamics_per_rank;
