@@ -47,6 +47,7 @@ std::vector<ActionRule> ActionRuleCandidates(const ReputationDynamics& rd) {
 
 std::pair<std::vector<uint64_t>, uint64_t> find_ESSs(const ReputationDynamics& rd) {
   const double mu_e = 0.02, mu_a = 0.02, benefit = 1.2, cost = 1.0;
+  const double coop_prob_th = 0.9;
 
   std::vector<uint64_t> ess_ids;
   uint64_t num_total = 0ull;
@@ -54,7 +55,7 @@ std::pair<std::vector<uint64_t>, uint64_t> find_ESSs(const ReputationDynamics& r
   for (const ActionRule& ar: act_rules) {
     num_total++;
     Game g(mu_e, mu_a, rd, ar);
-    if (g.IsESS(benefit, cost)) {
+    if (g.ResidentCoopProb() > coop_prob_th && g.IsESS(benefit, cost)) {
       ess_ids.push_back(g.ID());
       // std::cout << "ESS is found: " << g.Inspect();
     }
