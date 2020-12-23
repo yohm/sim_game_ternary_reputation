@@ -45,6 +45,23 @@ std::vector<ActionRule> ActionRuleCandidates(const ReputationDynamics& rd) {
   return ans;
 }
 
+std::pair<std::vector<uint64_t>, uint64_t> find_ESSs(const ReputationDynamics& rd) {
+  const double mu_e = 0.02, mu_a = 0.02, benefit = 1.2, cost = 1.0;
+
+  std::vector<uint64_t> ess_ids;
+  uint64_t num_total = 0ull;
+  std::vector<ActionRule> act_rules = ActionRuleCandidates(rd);
+  for (const ActionRule& ar: act_rules) {
+    num_total++;
+    Game g(mu_e, mu_a, rd, ar);
+    if (g.IsESS(benefit, cost)) {
+      ess_ids.push_back(g.ID());
+      // std::cout << "ESS is found: " << g.Inspect();
+    }
+  }
+  return std::make_pair(ess_ids, num_total);
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -58,12 +75,11 @@ int main(int argc, char *argv[]) {
 
   auto start = std::chrono::system_clock::now();
 
-  const double mu_e = 0.02, mu_a = 0.02, benefit = 1.2, cost = 1.0;
 
   uint64_t total_count = 0ull, ess_count = 0ull;
   std::vector<uint64_t> ESS_ids;
 
-  // when GGC => G and GGD => B are fixed, there are 3^16 = 43046721 types of reputation dynamics:
+  // when GGC => G and GGD => B are fixed, there are 3^16 = 43,046,721 types of reputation dynamics:
   // Top most two bits are fixed: 2*3^17 + 0*3^16 = 258280326
   const uint64_t fixed_rep = 258280326ull;
   const uint64_t num_rep_dynamics = 43046721ull;
@@ -82,19 +98,13 @@ int main(int argc, char *argv[]) {
     assert(rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G);
     assert(rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B);
 
-    std::vector<ActionRule> act_rules = ActionRuleCandidates(rd);
-    for (const ActionRule& ar: act_rules) {
-      #pragma omp atomic update
-      total_count++;
-      Game g(mu_e, mu_a, rd, ar);
-      if (g.IsESS(benefit, cost)) {
-        #pragma omp atomic update
-        ess_count++;
-        #pragma omp critical
-        ESS_ids.push_back(g.ID());
-        // std::cout << "ESS is found: " << g.Inspect();
-      }
-    }
+    auto ans = find_ESSs(rd);
+    #pragma omp atomic update
+    total_count += ans.second;
+    #pragma omp atomic update
+    ess_count += ans.first.size();
+    #pragma omp critical
+    ESS_ids.insert(ESS_ids.end(), ans.first.begin(), ans.first.end());
   }
 
   std::cout << "ESS / total : " << ess_count << " / " << total_count << " at " << my_rank << " / " << num_procs << std::endl;
