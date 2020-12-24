@@ -58,6 +58,39 @@ int main(int argc, char *argv[]) {
     assert( rep_act2.second[2] == Action::C );
   }
 
+  {
+    // test permutation
+    ReputationDynamics rd({
+                            Reputation::B, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G,
+                            Reputation::G, Reputation::N, Reputation::B, Reputation::G, Reputation::G, Reputation::G,
+                            Reputation::N, Reputation::G, Reputation::N, Reputation::N, Reputation::N, Reputation::B
+                          });
+    ActionRule ar({
+                    Action::C, Action::D, Action::C,
+                    Action::C, Action::D, Action::D,
+                    Action::D, Action::D, Action::C
+                  });
+
+    Game g(0.02, 0.02, rd, ar);
+    auto ht = g.ResidentEqReputation();
+    assert( Close(ht[0], 0.27) );
+    assert( Close(ht[1], 0.40) );
+    assert( Close(ht[2], 0.33) );
+    assert( Close(g.ResidentCoopProb(), 0.38 ));
+
+    auto rdn_map = rd.Normalized();
+    ReputationDynamics& rd2 = rdn_map.first;
+    ActionRule ar2 = ar.Permute(rdn_map.second);
+    Game g2(0.02, 0.02, rd2, ar2);
+    std::array<int,3> map_expected = {2,1,0};
+    assert( rdn_map.second == map_expected );
+    auto ht2 = g2.ResidentEqReputation();
+    assert( Close(ht2[2], 0.27) );
+    assert( Close(ht2[1], 0.40) );
+    assert( Close(ht2[0], 0.33) );
+    assert( Close(g.ResidentCoopProb(), 0.38 ));
+  }
+
   // construct leading eight
   {
     // GGC => G, GBC => *, BGC => G, BBC => *
