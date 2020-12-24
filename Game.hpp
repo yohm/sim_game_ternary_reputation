@@ -12,12 +12,10 @@ class Game {
   public:
   using v3d_t = std::array<double,3>;
   Game(double mu_e, double mu_a, const ReputationDynamics& rd, const ActionRule& ar) : mu_e(mu_e), mu_a(mu_a), rep_dynamics(rd), resident_ar(ar) {
-    resident_h_star = CalcHStarResident();
-    resident_coop_prob = CooperationProb(resident_ar, resident_h_star, resident_h_star);
+    resident_h_star_ready = false;
   }
   Game(double mu_e, double mu_a, uint64_t id) : mu_e(mu_e), mu_a(mu_a), rep_dynamics(id>>9ul), resident_ar(id&511ul) {
-    resident_h_star = CalcHStarResident();
-    resident_coop_prob = CooperationProb(resident_ar, resident_h_star, resident_h_star);
+    resident_h_star_ready = false;
   }
   std::string Inspect() const {
     std::stringstream ss;
@@ -35,7 +33,8 @@ class Game {
   const double mu_e, mu_a;
   const ReputationDynamics rep_dynamics;
   const ActionRule resident_ar;
-  bool IsESS(double benefit, double cost) const {
+  bool IsESS(double benefit, double cost) {
+    CalcHStarResident();
     double res_payoff = (benefit-cost) * resident_coop_prob;
     for (int i = 0; i < 512; i++) {
       // if (i % 100 == 0 ) { std::cerr << "checking mutant " << i << std::endl; }
@@ -45,8 +44,23 @@ class Game {
     }
     return true;
   }
-  v3d_t ResidentEqReputation() const { return resident_h_star; } // equilibrium reputation of resident species
-  double ResidentCoopProb() const { return resident_coop_prob; } // cooperation probability between resident species
+  v3d_t ResidentEqReputation() { CalcHStarResident(); return resident_h_star; } // equilibrium reputation of resident species
+  double ResidentCoopProb() { CalcHStarResident(); return resident_coop_prob; } // cooperation probability between resident species
+  v3d_t HStarMutant(const ActionRule& mutant_action_rule) {
+    CalcHStarResident();
+    std::function<std::array<double,3>(std::array<double,3>)> func = [this,&mutant_action_rule](std::array<double,3> x) {
+      return HdotMutant(x, mutant_action_rule);
+    };
+    return SolveByRungeKutta(func);
+  }
+  double MutantPayoff(const ActionRule& mutant, double benefit, double cost) {
+    CalcHStarResident();
+    v3d_t mut_rep = HStarMutant(mutant);
+    // cooperation probability of mutant against resident
+    double mut_res_coop = CooperationProb(mutant, mut_rep, resident_h_star); // cooperation prob of mutant for resident
+    double res_mut_coop = CooperationProb(resident_ar, resident_h_star, mut_rep); // cooperation prob of resident for mutant
+    return benefit * res_mut_coop - cost * mut_res_coop;
+  }
   std::pair<std::array<Reputation,3>,std::array<Action,3>> TraceReputationAndAction(const Reputation& init, const Reputation& resident_rep) const {
     std::array<Reputation,3> rep_hist;
     std::array<Action,3> act_hist;
@@ -58,27 +72,18 @@ class Game {
     act_hist[2] = resident_ar.ActAt(rep_hist[2], resident_rep);
     return std::make_pair(rep_hist, act_hist);
   }
-  double MutantPayoff(const ActionRule& mutant, double benefit, double cost) const {
-    v3d_t mut_rep = HStarMutant(mutant);
-    // cooperation probability of mutant against resident
-    double mut_res_coop = CooperationProb(mutant, mut_rep, resident_h_star); // cooperation prob of mutant for resident
-    double res_mut_coop = CooperationProb(resident_ar, resident_h_star, mut_rep); // cooperation prob of resident for mutant
-    return benefit * res_mut_coop - cost * mut_res_coop;
-  }
-  v3d_t HStarMutant(const ActionRule& mutant_action_rule) const {
-    std::function<std::array<double,3>(std::array<double,3>)> func = [this,&mutant_action_rule](std::array<double,3> x) {
-      return HdotMutant(x, mutant_action_rule);
-    };
-    return SolveByRungeKutta(func);
-  }
   private:
   v3d_t resident_h_star; // equilibrium reputation of resident species
   double resident_coop_prob;  // cooperation probability of resident species
-  v3d_t CalcHStarResident() const {
+  bool resident_h_star_ready; // if true, resident_h_star and resident_coop_prob are ready
+  void CalcHStarResident() {
+    if (resident_h_star_ready) return;
     std::function<std::array<double,3>(std::array<double,3>)> func = [this](std::array<double,3> x) {
       return HdotResident(x);
     };
-    return SolveByRungeKutta(func);
+    resident_h_star = SolveByRungeKutta(func);
+    resident_coop_prob = CooperationProb(resident_ar, resident_h_star, resident_h_star);
+    resident_h_star_ready = true;
   }
   v3d_t HdotResident(const std::array<double,3>& ht) const {
     v3d_t ht_dot = {-ht[0], -ht[1], -ht[2]};
