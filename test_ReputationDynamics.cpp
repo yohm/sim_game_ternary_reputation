@@ -70,6 +70,29 @@ int main(int argc, char *argv[]) {
   }
 
   {
+    // testing permutation
+    ReputationDynamics rd({
+                            Reputation::B, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G,
+                            Reputation::G, Reputation::N, Reputation::B, Reputation::G, Reputation::G, Reputation::G,
+                            Reputation::N, Reputation::G, Reputation::N, Reputation::N, Reputation::N, Reputation::B
+                          });
+
+    ReputationDynamics rd2 = rd.Permute({1,0,2}); // swap B,N
+    ReputationDynamics rd3({
+                            Reputation::N, Reputation::G, Reputation::G, Reputation::B, Reputation::G, Reputation::G,
+                            Reputation::G, Reputation::N, Reputation::N, Reputation::B, Reputation::N, Reputation::G,
+                            Reputation::B, Reputation::B, Reputation::B, Reputation::G, Reputation::B, Reputation::N
+                          });
+    std::cout << "rd: " << rd.Inspect()
+              << "rd3:" << rd3.Inspect();
+    assert(rd2 == rd3);
+
+    auto p = rd.Normalized();
+    std::cout << "normalized" << std::endl << p.first.Inspect();
+    std::cout << "map: " << p.second[0] << ',' << p.second[1] << ',' << p.second[2] << std::endl;
+  }
+
+  {
     // when GG=>C is fixed, there are 255 action rules
     for (size_t i = 0; i < 256; i++) {
       ActionRule ar(i + 256);

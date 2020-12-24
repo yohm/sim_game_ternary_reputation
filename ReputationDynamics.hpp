@@ -112,6 +112,44 @@ class ReputationDynamics {
     }
   }
   ReputationDynamics Clone() const { return ReputationDynamics(reputations); }
+  ReputationDynamics Permute(std::array<int,3> map) const {
+    {
+      auto a = map; std::sort(a.begin(), a.end());
+      assert(a[0] == 0 && a[1] == 1 && a[2] == 2);
+    }
+    ReputationDynamics new_rd = Clone();
+    for (int i = 0; i < 3; i++) {
+      Reputation X = static_cast<Reputation>(i);
+      Reputation X_new = static_cast<Reputation>(map[i]);
+      for (int j = 0; j < 3; j++) {
+        Reputation Y = static_cast<Reputation>(j);
+        Reputation Y_new = static_cast<Reputation>(map[j]);
+        Reputation Z = RepAt(X, Y, Action::C);
+        Reputation Z_new = static_cast<Reputation>( map[static_cast<int>(Z)] );
+        new_rd.SetRep(X_new, Y_new, Action::C, Z_new);
+        Z = RepAt(X, Y, Action::D);
+        Z_new = static_cast<Reputation>( map[static_cast<int>(Z)] );
+        new_rd.SetRep(X_new, Y_new, Action::D, Z_new);
+      }
+    }
+    return new_rd;
+  }
+  std::pair<ReputationDynamics,std::array<int,3>> Normalized() const {
+    using map_t = std::array<int,3>;
+    std::vector<map_t> maps = { {0,2,1}, {1,0,2}, {1,2,0}, {2,0,1}, {2,1,0} };
+    size_t max = ID();
+    ReputationDynamics ans = (*this);
+    map_t m_max = {0,1,2};
+    for (const auto& m : maps) {
+      ReputationDynamics t = Permute(m);
+      if (t.ID() > max) {
+        max = t.ID();
+        ans = t;
+        m_max = m;
+      }
+    }
+    return std::make_pair(ans, m_max);
+  }
   Reputation RepAt(const Reputation& rep_d, const Reputation& rep_r, const Action& act) const {
     size_t idx = 0;
     idx += static_cast<size_t>(rep_d) * 6;
