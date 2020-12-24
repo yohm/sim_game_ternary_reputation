@@ -19,7 +19,6 @@ std::vector<ActionRule> ActionRuleCandidates(const ReputationDynamics& rd) {
     const Reputation X = static_cast<Reputation>(i);
     for (int j = 0; j < 3; j++) {
       const Reputation Y = static_cast<Reputation>(j);
-      if (X == Reputation::G && Y == Reputation::G) continue;  // GG => C is fixed
       if (rd.RepAt(X, Y, Action::C) == rd.RepAt(X, Y, Action::D)) {
         // When reputation remains same for both actions, there is no reason to cooperate
         base.SetAction(X,Y, Action::D);
