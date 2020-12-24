@@ -59,6 +59,17 @@ int main(int argc, char *argv[]) {
   }
 
   {
+    ReputationDynamics rd(0ull);  // AllB
+    ActionRule ar(511ull);  // AllC
+    Game g(0.02, 0.02, rd, ar);
+    auto h = g.ResidentEqReputation();
+    assert(Close(h[0], 0.98));
+    assert(Close(h[1], 0.01));
+    assert(Close(h[2], 0.01));
+    assert(Close(g.ResidentCoopProb(), 1.0));
+  }
+
+  {
     // test permutation
     ReputationDynamics rd({
                             Reputation::B, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G,

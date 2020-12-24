@@ -45,7 +45,7 @@ class Game {
     return true;
   }
   v3d_t ResidentEqReputation() { CalcHStarResident(); return resident_h_star; } // equilibrium reputation of resident species
-  double ResidentCoopProb() { CalcHStarResident(); return resident_coop_prob; } // cooperation probability between resident species
+  double ResidentCoopProb() { CalcHStarResident(); return resident_coop_prob; } // cooperation probability between resident species without implementation error
   v3d_t HStarMutant(const ActionRule& mutant_action_rule) {
     CalcHStarResident();
     std::function<std::array<double,3>(std::array<double,3>)> func = [this,&mutant_action_rule](std::array<double,3> x) {
