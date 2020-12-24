@@ -112,14 +112,14 @@ class Game {
     }
     return ht_dot;
   }
-  v3d_t SolveByRungeKutta(std::function<std::array<double,3>(std::array<double,3>)>& func) const {
+  v3d_t SolveByRungeKutta(std::function<v3d_t (v3d_t)>& func) const {
     v3d_t ht = {1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0};
-    const size_t N_ITER = 10000;
-    double dt = 0.002;
-    const double conv_tolerance = 1.0e-4 * dt;
+    const size_t N_ITER = 1'000'000;
+    double dt = 0.005;
+    const double conv_tolerance = 1.0e-6 * dt;
     for (size_t t = 0; t < N_ITER; t++) {
 #ifdef DEBUG
-      if (t % 100 == 99) {
+      if (t % 10000 == 9999) {
         std::cerr << t << ' ' << ht[0] << ' ' << ht[1] << ' ' << ht[2] << std::endl;
       }
 #endif
@@ -146,10 +146,16 @@ class Game {
         k4[i] *= dt;
       }
       v3d_t delta;
+      double sum = 0.0;
       for (int i = 0; i < 3; i++) {
         delta[i] = (k1[i] + 2.0*k2[i] + 2.0*k3[i] + k4[i]) / 6.0;
         ht[i] += delta[i];
+        sum += ht[i];
       }
+      // normalize ht
+      double sum_inv = 1.0 / sum;
+      for (int i = 0; i < 3; i++) { ht[i] *= sum_inv; }
+
       if (std::abs(delta[0]) < conv_tolerance &&
           std::abs(delta[1]) < conv_tolerance &&
           std::abs(delta[2]) < conv_tolerance) {
