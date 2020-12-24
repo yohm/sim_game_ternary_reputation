@@ -120,7 +120,7 @@ class Game {
   v3d_t SolveByRungeKutta(std::function<v3d_t (v3d_t)>& func) const {
     v3d_t ht = {1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0};
     const size_t N_ITER = 1'000'000;
-    double dt = 0.005;
+    double dt = 0.01;
     const double conv_tolerance = 1.0e-6 * dt;
     for (size_t t = 0; t < N_ITER; t++) {
 #ifdef DEBUG
