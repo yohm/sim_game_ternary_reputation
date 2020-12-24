@@ -72,6 +72,24 @@ class ActionRule {
     idx += static_cast<size_t>(rep_r);
     actions[idx] = act;
   }
+  ActionRule Permute(std::array<int,3> map) const {
+    {
+      auto a = map; std::sort(a.begin(), a.end());
+      assert(a[0] == 0 && a[1] == 1 && a[2] == 2);
+    }
+    ActionRule new_ar(0);
+    for (int i = 0; i < 3; i++) {
+      Reputation X = static_cast<Reputation>(i);
+      Reputation X_new = static_cast<Reputation>(map[i]);
+      for (int j = 0; j < 3; j++) {
+        Reputation Y = static_cast<Reputation>(j);
+        Reputation Y_new = static_cast<Reputation>(map[j]);
+        Action A = ActAt(X, Y);
+        new_ar.SetAction(X_new, Y_new, A);
+      }
+    }
+    return new_ar;
+  }
 
   std::string Inspect() const {
     std::stringstream ss;
@@ -117,7 +135,7 @@ class ReputationDynamics {
       auto a = map; std::sort(a.begin(), a.end());
       assert(a[0] == 0 && a[1] == 1 && a[2] == 2);
     }
-    ReputationDynamics new_rd = Clone();
+    ReputationDynamics new_rd(0);
     for (int i = 0; i < 3; i++) {
       Reputation X = static_cast<Reputation>(i);
       Reputation X_new = static_cast<Reputation>(map[i]);

@@ -46,6 +46,24 @@ int main(int argc, char *argv[]) {
   }
 
   {
+    // testing permutation of action rule
+    ActionRule p({
+                   Action::C, Action::D, Action::C,
+                   Action::C, Action::D, Action::D,
+                   Action::D, Action::D, Action::C
+                 });
+    std::cout << p.Inspect();
+    ActionRule p2 = p.Permute({1,0,2});
+    std::cout << p2.Inspect();
+    ActionRule p3({
+                   Action::D, Action::C, Action::D,
+                   Action::D, Action::C, Action::C,
+                   Action::D, Action::D, Action::C
+                 });
+    assert(p2 == p3);
+  }
+
+  {
     // testing reputation dynamics
     ReputationDynamics rd({
                             Reputation::B, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G,
