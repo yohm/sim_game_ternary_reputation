@@ -62,6 +62,29 @@ std::pair<std::vector<uint64_t>, uint64_t> find_ESSs(const ReputationDynamics& r
   return std::make_pair(ess_ids, num_total);
 }
 
+std::vector<uint64_t> LoadInputFiles(const char* fname, int my_rank, int num_procs) {
+  std::ifstream fin(fname);
+  if (!fin) {
+    std::cerr << "Failed to open file " << fname << std::endl;
+    MPI_Abort(MPI_COMM_WORLD, 2);
+  }
+
+  std::vector<uint64_t> rep_ids;
+
+  while(fin) {
+    uint64_t i;
+    fin >> i;
+    if (fin) { rep_ids.emplace_back(i); }
+  }
+
+  std::vector<uint64_t> my_rep_ids;
+  for (size_t i = my_rank; i < rep_ids.size(); i+=num_procs) {
+    my_rep_ids.emplace_back( rep_ids[i] );
+  }
+
+  return std::move(my_rep_ids);
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -75,28 +98,23 @@ int main(int argc, char *argv[]) {
 
   auto start = std::chrono::system_clock::now();
 
+  if (argc != 2) {
+    std::cerr << "invalid number of arguments" << std::endl;
+    std::cerr << "  usage: " << argv[0] << " <reputation dynamics id list>" << std::endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
+  const std::vector<uint64_t> repd_ids = LoadInputFiles(argv[1], my_rank, num_procs);
 
   uint64_t total_count = 0ull, ess_count = 0ull;
   std::vector<uint64_t> ESS_ids;
 
-  // when GGC => G and GGD => B are fixed, there are 3^16 = 43,046,721 types of reputation dynamics:
-  // Top most two bits are fixed: 2*3^17 + 0*3^16 = 258280326
-  const uint64_t fixed_rep = 258'280'326ull;
-  const uint64_t num_rep_dynamics = 43'046'721ull;
-
-  const uint64_t num_rep_dynamics_per_rank = std::ceil( (double)num_rep_dynamics / num_procs);
-  const uint64_t start_idx = my_rank * num_rep_dynamics_per_rank;
-  const uint64_t end_idx = (my_rank == num_procs-1) ? num_rep_dynamics : (my_rank + 1) * num_rep_dynamics_per_rank;
-  assert(start_idx < num_rep_dynamics);
-
   #pragma omp parallel for shared(total_count,ess_count,ESS_ids) default(none) schedule(dynamic)
-  for (size_t i = start_idx; i < end_idx; i += 500000) {
+  for (size_t i = 0; i <repd_ids.size(); i++) {
     int th = omp_get_thread_num();
     int num_threads = omp_get_num_threads();
-    if (true) { std::cerr << i << ' ' << th << '/' << num_threads << " : " << my_rank << '/' << num_procs << std::endl; }
-    ReputationDynamics rd(fixed_rep + i);
-    assert(rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G);
-    assert(rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B);
+    // if (true) { std::cerr << repd_ids[i] << ' ' << th << '/' << num_threads << " : " << my_rank << '/' << num_procs << std::endl; }
+    ReputationDynamics rd(repd_ids[i]);
 
     auto ans = find_ESSs(rd);
     #pragma omp atomic update
@@ -105,6 +123,7 @@ int main(int argc, char *argv[]) {
     ess_count += ans.first.size();
     #pragma omp critical
     ESS_ids.insert(ESS_ids.end(), ans.first.begin(), ans.first.end());
+
   }
 
   std::cout << "ESS / total : " << ess_count << " / " << total_count << " at " << my_rank << " / " << num_procs << std::endl;
@@ -120,6 +139,14 @@ int main(int argc, char *argv[]) {
   auto end = std::chrono::system_clock::now();
   double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
   std::cout << "Elapsed time: " << elapsed / 1000.0 << " at " << my_rank << " / " << num_procs << std::endl;
+
+  uint64_t total_count_sum = 0ull, ess_count_sum = 0ull;
+  MPI_Reduce(&total_count, &total_count_sum, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&ess_count, &ess_count_sum, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+
+  if (my_rank == 0) {
+    std::cout << "SUM ESS / SUM TOTAL : " << ess_count_sum << " / " << total_count_sum << std::endl;
+  }
 
   MPI_Finalize();
 
