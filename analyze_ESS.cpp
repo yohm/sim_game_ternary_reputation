@@ -65,6 +65,7 @@ int main(int argc, char* argv[]) {
   std::vector<double> coop_probs(N, 0.0);
   std::vector<std::array<double,3> > hs(N);
 
+  #pragma omp parallel for shared(game_ids,new_game_ids,coop_probs,hs)
   for (size_t i = 0; i < N; i++) {
     if (i % 10'000 == 0) { std::cerr << i << " / " << game_ids.size() << std::endl; }
     Game g(mu_e, mu_a, game_ids[i]);
