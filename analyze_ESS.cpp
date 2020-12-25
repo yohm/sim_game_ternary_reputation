@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     std::array<int,3> map;
     if (h[0] >= h[1] && h[1] >= h[2]) { map = {2,1,0}; }
     else if (h[0] >= h[2] && h[2] >= h[1]) { map = {2, 0, 1}; }
-    else if (h[1] >= h[0] && h[0] >= h[2]) { map = {1, 2, 2}; }
+    else if (h[1] >= h[0] && h[0] >= h[2]) { map = {1, 2, 0}; }
     else if (h[1] >= h[2] && h[2] >= h[0]) { map = {0, 2, 1}; }
     else if (h[2] >= h[1] && h[1] >= h[0]) { map = {0, 1, 2}; }
     else if (h[2] >= h[0] && h[0] >= h[1]) { map = {1, 0, 2}; }
