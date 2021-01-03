@@ -33,32 +33,6 @@ int main(int argc, char* argv[]) {
 
   std::cerr << "Loaded " << game_ids.size() << " games" << std::endl;
 
-  {
-    std::vector<uint64_t> rep_ids;
-    for (size_t i = 0; i < game_ids.size(); i++) {
-      rep_ids.emplace_back(game_ids[i] >> 9ull);
-    }
-    std::sort(rep_ids.begin(), rep_ids.end());
-    rep_ids.erase( std::unique(rep_ids.begin(), rep_ids.end()), rep_ids.end() );
-
-    std::cout << "num_ESSs: " << game_ids.size() << std::endl
-              << "num_RepDynamics: " << rep_ids.size() << std::endl;
-
-    /*
-    std::vector< std::array<size_t,3> > histo(18, {0,0,0});
-    for (uint64_t id: rep_ids) {
-      ReputationDynamics rd(id);
-      for (size_t n = 0; n < 18; n++) {
-        histo[n][static_cast<int>(rd.reputations[n])]++;
-      }
-    }
-    for (size_t n = 0; n < 18; n++) {
-      std::cout << n << " : " << histo[n][0] << ' ' << histo[n][1] << ' ' << histo[n][2] << std::endl;
-    }
-     */
-  }
-
-
   const double mu_e = 0.02, mu_a = 0.02;
   const size_t N = game_ids.size();
   std::vector<uint64_t > new_game_ids(N, 0ull);
