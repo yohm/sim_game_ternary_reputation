@@ -17,12 +17,14 @@ class Game {
   Game(double mu_e, double mu_a, uint64_t id) : mu_e(mu_e), mu_a(mu_a), rep_dynamics(id>>9ul), resident_ar(id&511ul) {
     resident_h_star_ready = false;
   }
-  std::string Inspect() const {
+  std::string Inspect() {
     std::stringstream ss;
+    auto h = ResidentEqReputation();
     ss << "GameID: " << ID() << std::endl
        << "(mu_e, mu_a): (" << mu_e << ", " << mu_a << ")" << std::endl
        << "--- " << rep_dynamics.Inspect()
-       << "--- " << resident_ar.Inspect();
+       << "--- " << resident_ar.Inspect()
+       << "(c_porb,h0,h1,h2): " << ResidentCoopProb() << ' ' << h[0] << ' ' << h[1] << ' ' << h[2] << std::endl;
     return ss.str();
   }
   uint64_t ID() const {

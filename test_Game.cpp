@@ -8,6 +8,15 @@ bool Close(double d1, double d2, double tolerance = 1.0e-2) {
 }
 
 int main(int argc, char *argv[]) {
+  if (argc > 1) {
+    for (size_t i = 1; i < argc; i++) {
+       uint64_t id = std::stoull(argv[i]);
+       Game g(0.02, 0.02, id);
+       std::cout << g.Inspect() << std::endl;
+    }
+    return 0;
+  }
+
   {
     ReputationDynamics rd({
                             Reputation::B, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G,
