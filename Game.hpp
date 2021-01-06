@@ -17,6 +17,11 @@ class Game {
   Game(double mu_e, double mu_a, uint64_t id) : mu_e(mu_e), mu_a(mu_a), rep_dynamics(id>>9ul), resident_ar(id&511ul) {
     resident_h_star_ready = false;
   }
+  Game(double mu_e, double mu_a, uint64_t id, double coop_prob, const std::array<double,3>& h_star) : mu_e(mu_e), mu_a(mu_a), rep_dynamics(id>>9ull), resident_ar(id&511ull) {
+    resident_coop_prob = coop_prob;
+    resident_h_star = h_star;
+    resident_h_star_ready = true;
+  }
   std::string Inspect() {
     std::stringstream ss;
     auto h = ResidentEqReputation();
@@ -45,6 +50,44 @@ class Game {
       if (MutantPayoff(mut_ar, benefit, cost) > res_payoff) { return false; }
     }
     return true;
+  }
+  bool IsLikeLeadingEight() const {
+    ReputationDynamics rd = rep_dynamics;
+    ActionRule ar = resident_ar;
+
+    // Common rules of leading eight
+    //- GGc => G
+    //- GGd => B
+    //- GBd => G
+    //- BGc => G
+    //- BGd => B (not G)
+    //- GG => c
+    //- GB => d
+    //- BG => c
+
+    // GGc => G and GG => c
+    if (rd.RepAt(Reputation::G, Reputation::G, Action::C) != Reputation::G ) { return false; }
+    if (ar.ActAt(Reputation::G, Reputation::G) != Action::C) { return false; }
+    // GGd => B
+    if (rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::G) { return false; }
+    else {
+      if (rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::N) {
+        rd = rd.Permute({1,0,2});  // swap N and B. Regard N as B in the following.
+        ar = ar.Permute({1,0,2});
+      }
+    }
+    // GB => d
+    if (ar.ActAt(Reputation::G, Reputation::B) != Action::D) { return false; }
+
+    // BGc => G and BG => c
+    if (rd.RepAt(Reputation::B, Reputation::G, Action::C) != Reputation::G) { return false; }
+    if (ar.ActAt(Reputation::B, Reputation::G) != Action::C) { return false; }
+
+    // BGd => not G
+    if (rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::G) { return false; }
+
+    return true;
+
   }
   v3d_t ResidentEqReputation() { CalcHStarResident(); return resident_h_star; } // equilibrium reputation of resident species
   double ResidentCoopProb() { CalcHStarResident(); return resident_coop_prob; } // cooperation probability between resident species without implementation error
