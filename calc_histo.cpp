@@ -284,12 +284,13 @@ int ClassifyType(const Game& g) {
     return 6;
   }
   // type-7: G and N works as G for the leading eight, but B players cooperate only with G or N
+  //      punishment by N against B may not always be justified
   // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
   // GG => c, GN => c, NG => c, NN => c
   // GGd => B, GNd => B, NGd => B, NNd => B
   // GB => d, NB => d
   // ---
-  // GBd => [GN], NBd => [GN]
+  // GBd => [GN]
   // (BG => c and BGc => [GN] and BN => d) or (BN => c and BNc => [GN] and BG => d)
   // BGd => B, BNd => B
   else if (
@@ -312,7 +313,6 @@ int ClassifyType(const Game& g) {
     && ar.ActAt(Reputation::N, Reputation::B) == Action::D
     // ---------------
     && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
     // ---
     && (
       (
@@ -332,6 +332,261 @@ int ClassifyType(const Game& g) {
     && rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::B
     ) {
     return 7;
+  }
+  // type-8: G and N works as G for the leading eight, but N-N defects each other
+  // GGc => [GN], GNc => [GN], NGc => [GN], *NNd => [GN]*
+  // GG => c, GN => c, NG => c, *NN => d*
+  // GGd => B, GNd => B, NGd => B
+  // GB => d, NB => d
+  // ---
+  // GBd => [GN], NBd => [GN]
+  // BGc => [GN], BNc => [GN]
+  // BG => c, BN => c
+  // BGd => B, BNd => B
+  else if (
+    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::N) == Action::D
+    // ---
+    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
+    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    // ---------------
+    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
+    // ---
+    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::B, Reputation::N) == Action::C
+    // ---
+    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::B
+    ) {
+    return 8;
+  }
+  // type-9: G and N works as G for the leading eight, but N-N defects each other and B defects against N (similar to type 8 but differ in `BN`)
+  //         defection of B against N does not always cause Bad reputation
+  // GGc => [GN], GNc => [GN], NGc => [GN], NNd => [GN]
+  // GG => c, GN => c, NG => c, NN => d
+  // GGd => B, GNd => B, NGd => B
+  // GB => d, NB => d
+  // ---
+  // GBd => [GN], NBd => [GN]
+  // BGc => [GN]
+  // BG => c, *BN => d*
+  // BGd => B
+  else if (
+    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::N) == Action::D
+    // ---
+    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
+    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    // ---------------
+    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
+    // ---
+    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::B, Reputation::N) == Action::D
+    // ---
+    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
+    ) {
+    return 9;
+  }
+  // type-10: G and N works as G for the leading eight, but N-N defects each other and punishment of N against B causes a Bad reputation
+  // GGc => [GN], GNc => [GN], NGc => [GN], NNd => [GN]
+  // GG => c, GN => c, NG => c, NN => d
+  // GGd => B, GNd => B, NGd => B
+  // GB => d, NB => d
+  // ---
+  // GBd => [GN], NBd => B
+  // BGc => [GN], BNc => [GN]
+  // BG => c, BN => c
+  // BGd => B, BNd => B
+  else if (
+    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::N) == Action::D
+    // ---
+    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
+    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    // ---------------
+    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
+    && rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::B
+    // ---
+    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::B, Reputation::N) == Action::C
+    // ---
+    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::B
+    ) {
+    return 10;
+  }
+  // type-11: G and N works as G for the leading eight, but N-N defects each other, and punishment of N against B causes a Bad reputation, and B defects against N
+  //          hybrid of type 9 and 10
+  // GGc => [GN], GNc => [GN], NGc => [GN], NNd => [GN]
+  // GG => c, GN => c, NG => c, NN => d
+  // GGd => B, GNd => B, NGd => B
+  // GB => d, NB => d
+  // ---
+  // GBd => [GN], NBd => B
+  // BGc => [GN]
+  // BG => c, BN => c
+  // BGd => B
+  else if (
+    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::N) == Action::D
+    // ---
+    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
+    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    // ---------------
+    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
+    && rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::B
+    // ---
+    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::B, Reputation::N) == Action::D
+    // ---
+    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
+    ) {
+    return 11;
+  }
+  // type-12: G and N works as G for the leading eight, but N can maintain G reputation when making a mistake.
+  //          Only the punishment by N against B is justified.
+  //          The highest reputation in this case is N since it has a right to punish others.
+  //          a variant of type-6
+  // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
+  // GG => c, GN => c, NG => c, NN => c
+  // GGd => B, GNd => B, **NGd => [GB], NNd => [GB]**
+  // GB => d, NB => d
+  // ---
+  // NBd => [GN] and GBd => B  **
+  // BGc => [GN], BNc => [GN]
+  // BG => c, BN => c
+  // BGd => B, BNd => B
+  else if (
+    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::N) == Action::C
+    // ---
+    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
+    && (rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B)
+    && (rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::B)
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
+    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    // ---------------
+    && (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
+    && rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::B
+    // ---
+    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::B, Reputation::N) == Action::C
+    // ---
+    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::B
+    ) {
+    return 12;
+  }
+  // type-13: G and N works as G for the leading eight, and B defects N and recovers a good reputation.
+  //          Even though AllD player can eventually gain G reputation, she must spent a long time in B reputation since N players are not frequent. Thus, being a defector does not pay off.
+  // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
+  // GG => c, GN => c, NG => c, NN => c
+  // GGd => B, GNd => B, NGd => B, NNd => B
+  // GB => d, NB => d
+  // ---
+  // GBd => [GN], NBd => [GN]
+  // BGc => [GN], BNd => [GN]
+  // BG => c, BN => d
+  // BGd => B
+  else if (
+    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::N, Reputation::N) == Action::C
+    // ---
+    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::B
+    // ---
+    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
+    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    // ---------------
+    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
+    && (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
+    // ---
+    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::N)
+    // ---
+    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
+    && ar.ActAt(Reputation::B, Reputation::N) == Action::D
+    // ---
+    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
+    ) {
+    return 13;
   }
 
   return 0;
