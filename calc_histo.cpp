@@ -48,68 +48,18 @@ int ClassifyType(const Game& g) {
   ReputationDynamics rd = g.rep_dynamics;
   ActionRule ar = g.resident_ar;
 
-  // -1: unknown
-  //  1: leading-eight like
-  //    - GGc => G
-  //    - GG => c
-  //    - GGd => B
-  //    - GB => d
-  //    - GBd => G
-  //    ===
-  //    - BGc => G
-  //    - BG => c
-  //    - BGd => B
-  //    - NG P_{NG} => G
-  // 2: two-step recovery (B->N->G)
-  //    - GGc => G
-  //    - GG => c
-  //    - GGd => B
-  //    - GB => d
-  //    - GBd => G
-  //    ===
-  //    - BG P_{BG} => N  // recovers cooperation via N
-  //    - NG P_{NG} => G
-  //    - BG => c or NG => c
-  // 3: punisher is denoted as N
-  //    - GGc => G
-  //    - GG => c
-  //    - GGd => B
-  //    - GB => d
-  //    - GBd => N  // N indicates that the player is punishing
-  //    ===
-  //    - BGc => G
-  //    - NGd => G
-  //    - BG => c
-  //    - NG => d
-
+  const Reputation B = Reputation::B, N = Reputation::N, G = Reputation::G;
+  const Action D = Action::D, C = Action::C;
 
   // GGd => B
-  if (rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::N) {
+  if (rd.RepAt(G, G, D) == N) {
     rd = rd.Permute({1,0,2});  // swap N and B. Regard N as B
     ar = ar.Permute({1,0,2});
   }
-  else if (rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::G) {
+  else if (rd.RepAt(G, G, D) == G) {
     throw std::runtime_error("GGd cannot be G");
   }
 
-
-  /*
-  // GGc => G and GG => c
-  if (rd.RepAt(Reputation::G, Reputation::G, Action::C) != Reputation::G ) { return -1; }
-  if (ar.ActAt(Reputation::G, Reputation::G) == Action::D) { return -1; }
-  // GGd => B
-  if (rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::G) {
-    return -1;
-  }
-  else {
-    if (rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::N) {
-      rd = rd.Permute({1,0,2});  // swap N and B. Regard N as B
-      ar = ar.Permute({1,0,2});
-    }
-  }
-  // GB => d
-  if (ar.ActAt(Reputation::G, Reputation::B) != Action::D) { return -1; }
-   */
 
   // type-1: leading-eight like
   // GGc => G
@@ -122,15 +72,15 @@ int ClassifyType(const Game& g) {
   // BG => c
   // BGd => !G
   if (
-    rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
+    rd.RepAt(G, G, C) == G
+    && ar.ActAt(G, G) == C
+    && rd.RepAt(G, G, D) == B
+    && ar.ActAt(G, B) == D
     // ---------------
-    && rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G
-    && rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && rd.RepAt(Reputation::B, Reputation::G, Action::D) != Reputation::G
+    && rd.RepAt(G, B, D) == G
+    && rd.RepAt(B, G, C) == G
+    && ar.ActAt(B, G) == C
+    && rd.RepAt(B, G, D) != G
     ) {
     return 1;
   }
@@ -140,15 +90,15 @@ int ClassifyType(const Game& g) {
   //    - NG P_{NG} => G
   //    - BG => c or NG => c
   else if (
-    rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
+    rd.RepAt(G, G, C) == G
+    && ar.ActAt(G, G) == C
+    && rd.RepAt(G, G, D) == B
+    && ar.ActAt(G, B) == D
     // ---------------
-    && rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G
-    && rd.RepAt(Reputation::B, Reputation::G, ar.ActAt(Reputation::B, Reputation::G)) == Reputation::N
-    && rd.RepAt(Reputation::N, Reputation::G, ar.ActAt(Reputation::N, Reputation::G)) == Reputation::G
-    && (ar.ActAt(Reputation::B, Reputation::G) == Action::C || ar.ActAt(Reputation::N, Reputation::G) == Action::C)
+    && rd.RepAt(G, B, D) == G
+    && rd.RepAt(B, G, ar.ActAt(B, G)) == N
+    && rd.RepAt(N, G, ar.ActAt(N, G)) == G
+    && (ar.ActAt(B, G) == C || ar.ActAt(N, G) == C)
     ) {
     return 2;
   }
@@ -158,15 +108,15 @@ int ClassifyType(const Game& g) {
   //    - BG => c
   //    - NG P_{NG} => G
   else if (
-    rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
+    rd.RepAt(G, G, C) == G
+    && ar.ActAt(G, G) == C
+    && rd.RepAt(G, G, D) == B
+    && ar.ActAt(G, B) == D
     // ---------------
-    && rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N
-    && rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && rd.RepAt(Reputation::N, Reputation::G, ar.ActAt(Reputation::N, Reputation::G)) == Reputation::G
+    && rd.RepAt(G, B, D) == N
+    && rd.RepAt(B, G, C) == G
+    && ar.ActAt(B, G) == C
+    && rd.RepAt(N, G, ar.ActAt(N, G)) == G
     ) {
     return 3;
   }
@@ -176,15 +126,15 @@ int ClassifyType(const Game& g) {
   //    - BG => c
   //    - NG P_{NG} => G
   else if (
-    rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
+    rd.RepAt(G, G, C) == G
+    && ar.ActAt(G, G) == C
+    && rd.RepAt(G, G, D) == B
+    && ar.ActAt(G, B) == D
     // ---------------
-    && rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N
-    && rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && rd.RepAt(Reputation::N, Reputation::G, ar.ActAt(Reputation::N, Reputation::G)) == Reputation::G
+    && rd.RepAt(G, B, D) == N
+    && rd.RepAt(B, G, C) == N
+    && ar.ActAt(B, G) == C
+    && rd.RepAt(N, G, ar.ActAt(N, G)) == G
     ) {
     return 4;
   }
@@ -199,35 +149,35 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::N)
+    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
+    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
+    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
+    && (rd.RepAt(N, N, C) == G || rd.RepAt(N, N, C) == N)
     // ---
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::N) == Action::C
+    && ar.ActAt(G, G) == C
+    && ar.ActAt(G, N) == C
+    && ar.ActAt(N, G) == C
+    && ar.ActAt(N, N) == C
     // ---
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(G, G, D) == B
+    && rd.RepAt(G, N, D) == B
+    && rd.RepAt(N, G, D) == B
+    && rd.RepAt(N, N, D) == B
     // ---
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
-    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    && ar.ActAt(G, B) == D
+    && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
+    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+    && (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
     // ---
-    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
+    && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
     // ---
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::B, Reputation::N) == Action::C
+    && ar.ActAt(B, G) == C
+    && ar.ActAt(B, N) == C
     // ---
-    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(B, G, D) == B
+    && rd.RepAt(B, N, D) == B
     ) {
     return 5;
   }
@@ -242,44 +192,44 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::N)
+    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
+    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
+    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
+    && (rd.RepAt(N, N, C) == G || rd.RepAt(N, N, C) == N)
     // ---
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::N) == Action::C
+    && ar.ActAt(G, G) == C
+    && ar.ActAt(G, N) == C
+    && ar.ActAt(N, G) == C
+    && ar.ActAt(N, N) == C
     // ---
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(G, G, D) == B
+    && rd.RepAt(G, N, D) == B
+    && rd.RepAt(N, G, D) == B
+    && rd.RepAt(N, N, D) == B
     // ---
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
-    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    && ar.ActAt(G, B) == D
+    && ar.ActAt(N, B) == D
     // ---------------
     && (
       (
-        (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
-        && rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::B
+        (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+        && rd.RepAt(N, B, D) == B
       )
       ||
       (
-        (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
-        && rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::B
+        (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
+        && rd.RepAt(G, B, D) == B
       )
     )
     // ---
-    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
+    && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
     // ---
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::B, Reputation::N) == Action::C
+    && ar.ActAt(B, G) == C
+    && ar.ActAt(B, N) == C
     // ---
-    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(B, G, D) == B
+    && rd.RepAt(B, N, D) == B
     ) {
     return 6;
   }
@@ -294,42 +244,42 @@ int ClassifyType(const Game& g) {
   // (BG => c and BGc => [GN] and BN => d) or (BN => c and BNc => [GN] and BG => d)
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::N)
+    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
+    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
+    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
+    && (rd.RepAt(N, N, C) == G || rd.RepAt(N, N, C) == N)
     // ---
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::N) == Action::C
+    && ar.ActAt(G, G) == C
+    && ar.ActAt(G, N) == C
+    && ar.ActAt(N, G) == C
+    && ar.ActAt(N, N) == C
     // ---
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(G, G, D) == B
+    && rd.RepAt(G, N, D) == B
+    && rd.RepAt(N, G, D) == B
+    && rd.RepAt(N, N, D) == B
     // ---
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
-    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    && ar.ActAt(G, B) == D
+    && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
+    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
     // ---
     && (
       (
-        ar.ActAt(Reputation::B, Reputation::G) == Action::C
-        && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
-        && ar.ActAt(Reputation::B, Reputation::N) == Action::D
+        ar.ActAt(B, G) == C
+        && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
+        && ar.ActAt(B, N) == D
       )
       ||
       (
-        ar.ActAt(Reputation::B, Reputation::N) == Action::C
-        && (rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::N)
-        && ar.ActAt(Reputation::B, Reputation::G) == Action::D
+        ar.ActAt(B, N) == C
+        && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
+        && ar.ActAt(B, G) == D
       )
     )
     // ---
-    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(B, G, D) == B
+    && rd.RepAt(B, N, D) == B
     ) {
     return 7;
   }
@@ -344,34 +294,34 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::N)
+    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
+    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
+    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
+    && (rd.RepAt(N, N, D) == G || rd.RepAt(N, N, D) == N)
     // ---
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::N) == Action::D
+    && ar.ActAt(G, G) == C
+    && ar.ActAt(G, N) == C
+    && ar.ActAt(N, G) == C
+    && ar.ActAt(N, N) == D
     // ---
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(G, G, D) == B
+    && rd.RepAt(G, N, D) == B
+    && rd.RepAt(N, G, D) == B
     // ---
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
-    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    && ar.ActAt(G, B) == D
+    && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
+    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+    && (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
     // ---
-    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
+    && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
     // ---
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::B, Reputation::N) == Action::C
+    && ar.ActAt(B, G) == C
+    && ar.ActAt(B, N) == C
     // ---
-    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(B, G, D) == B
+    && rd.RepAt(B, N, D) == B
     ) {
     return 8;
   }
@@ -387,32 +337,32 @@ int ClassifyType(const Game& g) {
   // BG => c, *BN => d*
   // BGd => B
   else if (
-    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::N)
+    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
+    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
+    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
+    && (rd.RepAt(N, N, D) == G || rd.RepAt(N, N, D) == N)
     // ---
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::N) == Action::D
+    && ar.ActAt(G, G) == C
+    && ar.ActAt(G, N) == C
+    && ar.ActAt(N, G) == C
+    && ar.ActAt(N, N) == D
     // ---
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(G, G, D) == B
+    && rd.RepAt(G, N, D) == B
+    && rd.RepAt(N, G, D) == B
     // ---
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
-    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    && ar.ActAt(G, B) == D
+    && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
+    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+    && (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
     // ---
-    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
     // ---
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::B, Reputation::N) == Action::D
+    && ar.ActAt(B, G) == C
+    && ar.ActAt(B, N) == D
     // ---
-    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(B, G, D) == B
     ) {
     return 9;
   }
@@ -427,34 +377,34 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::N)
+    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
+    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
+    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
+    && (rd.RepAt(N, N, D) == G || rd.RepAt(N, N, D) == N)
     // ---
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::N) == Action::D
+    && ar.ActAt(G, G) == C
+    && ar.ActAt(G, N) == C
+    && ar.ActAt(N, G) == C
+    && ar.ActAt(N, N) == D
     // ---
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(G, G, D) == B
+    && rd.RepAt(G, N, D) == B
+    && rd.RepAt(N, G, D) == B
     // ---
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
-    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    && ar.ActAt(G, B) == D
+    && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
-    && rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::B
+    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+    && rd.RepAt(N, B, D) == B
     // ---
-    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
+    && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
     // ---
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::B, Reputation::N) == Action::C
+    && ar.ActAt(B, G) == C
+    && ar.ActAt(B, N) == C
     // ---
-    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(B, G, D) == B
+    && rd.RepAt(B, N, D) == B
     ) {
     return 10;
   }
@@ -470,32 +420,32 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B
   else if (
-    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::N)
+    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
+    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
+    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
+    && (rd.RepAt(N, N, D) == G || rd.RepAt(N, N, D) == N)
     // ---
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::N) == Action::D
+    && ar.ActAt(G, G) == C
+    && ar.ActAt(G, N) == C
+    && ar.ActAt(N, G) == C
+    && ar.ActAt(N, N) == D
     // ---
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(G, G, D) == B
+    && rd.RepAt(G, N, D) == B
+    && rd.RepAt(N, G, D) == B
     // ---
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
-    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    && ar.ActAt(G, B) == D
+    && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
-    && rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::B
+    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+    && rd.RepAt(N, B, D) == B
     // ---
-    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
+    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
     // ---
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::B, Reputation::N) == Action::D
+    && ar.ActAt(B, G) == C
+    && ar.ActAt(B, N) == D
     // ---
-    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(B, G, D) == B
     ) {
     return 11;
   }
@@ -513,35 +463,35 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::N)
+    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
+    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
+    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
+    && (rd.RepAt(N, N, C) == G || rd.RepAt(N, N, C) == N)
     // ---
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::N) == Action::C
+    && ar.ActAt(G, G) == C
+    && ar.ActAt(G, N) == C
+    && ar.ActAt(N, G) == C
+    && ar.ActAt(N, N) == C
     // ---
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
-    && (rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B)
-    && (rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::B)
+    && rd.RepAt(G, G, D) == B
+    && rd.RepAt(G, N, D) == B
+    && (rd.RepAt(N, G, D) == G || rd.RepAt(N, G, D) == B)
+    && (rd.RepAt(N, N, D) == G || rd.RepAt(N, N, D) == B)
     // ---
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
-    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    && ar.ActAt(G, B) == D
+    && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
-    && rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::B
+    && (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
+    && rd.RepAt(G, B, D) == B
     // ---
-    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::C) == Reputation::N)
+    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
+    && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
     // ---
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::B, Reputation::N) == Action::C
+    && ar.ActAt(B, G) == C
+    && ar.ActAt(B, N) == C
     // ---
-    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(B, G, D) == B
+    && rd.RepAt(B, N, D) == B
     ) {
     return 12;
   }
@@ -557,34 +507,34 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => d
   // BGd => B
   else if (
-    (rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::G, Reputation::N, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::G || rd.RepAt(Reputation::N, Reputation::N, Action::C) == Reputation::N)
+    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
+    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
+    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
+    && (rd.RepAt(N, N, C) == G || rd.RepAt(N, N, C) == N)
     // ---
-    && ar.ActAt(Reputation::G, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::G, Reputation::N) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::N, Reputation::N) == Action::C
+    && ar.ActAt(G, G) == C
+    && ar.ActAt(G, N) == C
+    && ar.ActAt(N, G) == C
+    && ar.ActAt(N, N) == C
     // ---
-    && rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::G, Reputation::N, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::G, Action::D) == Reputation::B
-    && rd.RepAt(Reputation::N, Reputation::N, Action::D) == Reputation::B
+    && rd.RepAt(G, G, D) == B
+    && rd.RepAt(G, N, D) == B
+    && rd.RepAt(N, G, D) == B
+    && rd.RepAt(N, N, D) == B
     // ---
-    && ar.ActAt(Reputation::G, Reputation::B) == Action::D
-    && ar.ActAt(Reputation::N, Reputation::B) == Action::D
+    && ar.ActAt(G, B) == D
+    && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::G, Reputation::B, Action::D) == Reputation::N)
-    && (rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::G || rd.RepAt(Reputation::N, Reputation::B, Action::D) == Reputation::N)
+    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+    && (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
     // ---
-    && (rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::G || rd.RepAt(Reputation::B, Reputation::G, Action::C) == Reputation::N)
-    && (rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::G || rd.RepAt(Reputation::B, Reputation::N, Action::D) == Reputation::N)
+    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
+    && (rd.RepAt(B, N, D) == G || rd.RepAt(B, N, D) == N)
     // ---
-    && ar.ActAt(Reputation::B, Reputation::G) == Action::C
-    && ar.ActAt(Reputation::B, Reputation::N) == Action::D
+    && ar.ActAt(B, G) == C
+    && ar.ActAt(B, N) == D
     // ---
-    && rd.RepAt(Reputation::B, Reputation::G, Action::D) == Reputation::B
+    && rd.RepAt(B, G, D) == B
     ) {
     return 13;
   }
