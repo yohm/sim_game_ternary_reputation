@@ -60,6 +60,8 @@ int ClassifyType(const Game& g) {
     throw std::runtime_error("GGd cannot be G");
   }
 
+  auto GorN = [](Reputation x)->bool { return (x == G || x == N); };
+
 
   // type-1: leading-eight like
   // GGc => G
@@ -149,10 +151,10 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
-    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
-    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
-    && (rd.RepAt(N, N, C) == G || rd.RepAt(N, N, C) == N)
+    GorN(rd.RepAt(G, G, C))
+    && GorN(rd.RepAt(G, N, C))
+    && GorN(rd.RepAt(N, G, C))
+    && GorN(rd.RepAt(N, N, C))
     // ---
     && ar.ActAt(G, G) == C
     && ar.ActAt(G, N) == C
@@ -167,11 +169,11 @@ int ClassifyType(const Game& g) {
     && ar.ActAt(G, B) == D
     && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
-    && (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
+    && GorN(rd.RepAt(G, B, D))
+    && GorN(rd.RepAt(N, B, D))
     // ---
-    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
-    && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
+    && GorN(rd.RepAt(B, G, C))
+    && GorN(rd.RepAt(B, N, C))
     // ---
     && ar.ActAt(B, G) == C
     && ar.ActAt(B, N) == C
@@ -192,10 +194,10 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
-    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
-    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
-    && (rd.RepAt(N, N, C) == G || rd.RepAt(N, N, C) == N)
+    GorN(rd.RepAt(G, G, C))
+    && GorN(rd.RepAt(G, N, C))
+    && GorN(rd.RepAt(N, G, C))
+    && GorN(rd.RepAt(N, N, C))
     // ---
     && ar.ActAt(G, G) == C
     && ar.ActAt(G, N) == C
@@ -212,18 +214,18 @@ int ClassifyType(const Game& g) {
     // ---------------
     && (
       (
-        (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+        GorN(rd.RepAt(G, B, D))
         && rd.RepAt(N, B, D) == B
       )
       ||
       (
-        (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
+        GorN(rd.RepAt(N, B, D))
         && rd.RepAt(G, B, D) == B
       )
     )
     // ---
-    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
-    && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
+    && GorN(rd.RepAt(B, G, C))
+    && GorN(rd.RepAt(B, N, C))
     // ---
     && ar.ActAt(B, G) == C
     && ar.ActAt(B, N) == C
@@ -244,10 +246,10 @@ int ClassifyType(const Game& g) {
   // (BG => c and BGc => [GN] and BN => d) or (BN => c and BNc => [GN] and BG => d)
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
-    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
-    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
-    && (rd.RepAt(N, N, C) == G || rd.RepAt(N, N, C) == N)
+    GorN(rd.RepAt(G, G, C))
+    && GorN(rd.RepAt(G, N, C))
+    && GorN(rd.RepAt(N, G, C))
+    && GorN(rd.RepAt(N, N, C))
     // ---
     && ar.ActAt(G, G) == C
     && ar.ActAt(G, N) == C
@@ -262,18 +264,18 @@ int ClassifyType(const Game& g) {
     && ar.ActAt(G, B) == D
     && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+    && GorN(rd.RepAt(G, B, D))
     // ---
     && (
       (
         ar.ActAt(B, G) == C
-        && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
+        && GorN(rd.RepAt(B, G, C))
         && ar.ActAt(B, N) == D
       )
       ||
       (
         ar.ActAt(B, N) == C
-        && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
+        && GorN(rd.RepAt(B, N, C))
         && ar.ActAt(B, G) == D
       )
     )
@@ -294,10 +296,10 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
-    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
-    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
-    && (rd.RepAt(N, N, D) == G || rd.RepAt(N, N, D) == N)
+    GorN(rd.RepAt(G, G, C))
+    && GorN(rd.RepAt(G, N, C))
+    && GorN(rd.RepAt(N, G, C))
+    && GorN(rd.RepAt(N, N, D))
     // ---
     && ar.ActAt(G, G) == C
     && ar.ActAt(G, N) == C
@@ -311,11 +313,11 @@ int ClassifyType(const Game& g) {
     && ar.ActAt(G, B) == D
     && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
-    && (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
+    && GorN(rd.RepAt(G, B, D))
+    && GorN(rd.RepAt(N, B, D))
     // ---
-    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
-    && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
+    && GorN(rd.RepAt(B, G, C))
+    && GorN(rd.RepAt(B, N, C))
     // ---
     && ar.ActAt(B, G) == C
     && ar.ActAt(B, N) == C
@@ -337,10 +339,10 @@ int ClassifyType(const Game& g) {
   // BG => c, *BN => d*
   // BGd => B
   else if (
-    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
-    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
-    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
-    && (rd.RepAt(N, N, D) == G || rd.RepAt(N, N, D) == N)
+    GorN(rd.RepAt(G, G, C))
+    && GorN(rd.RepAt(G, N, C))
+    && GorN(rd.RepAt(N, G, C))
+    && GorN(rd.RepAt(N, N, D))
     // ---
     && ar.ActAt(G, G) == C
     && ar.ActAt(G, N) == C
@@ -354,10 +356,10 @@ int ClassifyType(const Game& g) {
     && ar.ActAt(G, B) == D
     && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
-    && (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
+    && GorN(rd.RepAt(G, B, D))
+    && GorN(rd.RepAt(N, B, D))
     // ---
-    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
+    && GorN(rd.RepAt(B, G, C))
     // ---
     && ar.ActAt(B, G) == C
     && ar.ActAt(B, N) == D
@@ -377,10 +379,10 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
-    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
-    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
-    && (rd.RepAt(N, N, D) == G || rd.RepAt(N, N, D) == N)
+    GorN(rd.RepAt(G, G, C))
+    && GorN(rd.RepAt(G, N, C))
+    && GorN(rd.RepAt(N, G, C))
+    && GorN(rd.RepAt(N, N, D))
     // ---
     && ar.ActAt(G, G) == C
     && ar.ActAt(G, N) == C
@@ -394,11 +396,11 @@ int ClassifyType(const Game& g) {
     && ar.ActAt(G, B) == D
     && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+    && GorN(rd.RepAt(G, B, D))
     && rd.RepAt(N, B, D) == B
     // ---
-    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
-    && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
+    && GorN(rd.RepAt(B, G, C))
+    && GorN(rd.RepAt(B, N, C))
     // ---
     && ar.ActAt(B, G) == C
     && ar.ActAt(B, N) == C
@@ -420,10 +422,10 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B
   else if (
-    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
-    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
-    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
-    && (rd.RepAt(N, N, D) == G || rd.RepAt(N, N, D) == N)
+    GorN(rd.RepAt(G, G, C))
+    && GorN(rd.RepAt(G, N, C))
+    && GorN(rd.RepAt(N, G, C))
+    && GorN(rd.RepAt(N, N, D))
     // ---
     && ar.ActAt(G, G) == C
     && ar.ActAt(G, N) == C
@@ -437,10 +439,10 @@ int ClassifyType(const Game& g) {
     && ar.ActAt(G, B) == D
     && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
+    && GorN(rd.RepAt(G, B, D))
     && rd.RepAt(N, B, D) == B
     // ---
-    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
+    && GorN(rd.RepAt(B, G, C))
     // ---
     && ar.ActAt(B, G) == C
     && ar.ActAt(B, N) == D
@@ -463,10 +465,10 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   else if (
-    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
-    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
-    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
-    && (rd.RepAt(N, N, C) == G || rd.RepAt(N, N, C) == N)
+    GorN(rd.RepAt(G, G, C))
+    && GorN(rd.RepAt(G, N, C))
+    && GorN(rd.RepAt(N, G, C))
+    && GorN(rd.RepAt(N, N, C))
     // ---
     && ar.ActAt(G, G) == C
     && ar.ActAt(G, N) == C
@@ -481,11 +483,11 @@ int ClassifyType(const Game& g) {
     && ar.ActAt(G, B) == D
     && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
+    && GorN(rd.RepAt(N, B, D))
     && rd.RepAt(G, B, D) == B
     // ---
-    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
-    && (rd.RepAt(B, N, C) == G || rd.RepAt(B, N, C) == N)
+    && GorN(rd.RepAt(B, G, C))
+    && GorN(rd.RepAt(B, N, C))
     // ---
     && ar.ActAt(B, G) == C
     && ar.ActAt(B, N) == C
@@ -507,10 +509,10 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => d
   // BGd => B
   else if (
-    (rd.RepAt(G, G, C) == G || rd.RepAt(G, G, C) == N)
-    && (rd.RepAt(G, N, C) == G || rd.RepAt(G, N, C) == N)
-    && (rd.RepAt(N, G, C) == G || rd.RepAt(N, G, C) == N)
-    && (rd.RepAt(N, N, C) == G || rd.RepAt(N, N, C) == N)
+    GorN(rd.RepAt(G, G, C))
+    && GorN(rd.RepAt(G, N, C))
+    && GorN(rd.RepAt(N, G, C))
+    && GorN(rd.RepAt(N, N, C))
     // ---
     && ar.ActAt(G, G) == C
     && ar.ActAt(G, N) == C
@@ -525,11 +527,11 @@ int ClassifyType(const Game& g) {
     && ar.ActAt(G, B) == D
     && ar.ActAt(N, B) == D
     // ---------------
-    && (rd.RepAt(G, B, D) == G || rd.RepAt(G, B, D) == N)
-    && (rd.RepAt(N, B, D) == G || rd.RepAt(N, B, D) == N)
+    && GorN(rd.RepAt(G, B, D))
+    && GorN(rd.RepAt(N, B, D))
     // ---
-    && (rd.RepAt(B, G, C) == G || rd.RepAt(B, G, C) == N)
-    && (rd.RepAt(B, N, D) == G || rd.RepAt(B, N, D) == N)
+    && GorN(rd.RepAt(B, G, C))
+    && GorN(rd.RepAt(B, N, D))
     // ---
     && ar.ActAt(B, G) == C
     && ar.ActAt(B, N) == D
