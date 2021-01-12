@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <array>
 #include <map>
 #include <algorithm>
 #include <chrono>
@@ -17,27 +18,27 @@ class HistoNormalBin {
     if( histo.find(key) == histo.end() ) { histo[key] = 0; }
     histo[key]++;
   }
-  std::map<double,double> Frequency() {
+  std::map<double,double> Frequency() const {
     std::map<double,double> result;
     int key_min = histo.begin()->first;
     int key_max = histo.rbegin()->first;
     for( int i = key_min; i <= key_max; i++ ) {
       double val = binidx_to_val( i );
-      size_t n = ( histo.find(i) == histo.end() ) ? 0 : histo[i];
+      size_t n = ( histo.find(i) == histo.end() ) ? 0 : histo.at(i);
       double freq = n / binidx_to_binsize( i );
       result[val] = freq;
     }
     return result;
   }
-  private:
   const double bin;
-  std::function<int(double)> val_to_binidx = [=](double v)->int {
+  private:
+  int val_to_binidx(double v) const {
     return static_cast<int>( std::floor(v/bin) );
   };
-  std::function<double(int)> binidx_to_val = [=](int i)->double {
+  double binidx_to_val(int i) const {
     return i * bin;
   };
-  std::function<double(int)> binidx_to_binsize = [=](int i)->double {
+  double binidx_to_binsize(int i) const {
     return bin;
   };
   std::map<int, size_t> histo;
@@ -540,7 +541,81 @@ int ClassifyType(const Game& g) {
   return 0;
 }
 
+void PrintHistogramRepDynamics(const std::vector<uint64_t> game_ids) {
+  std::cout << "num_ESSs: " << game_ids.size() << std::endl;
 
+  std::vector<uint64_t> rep_ids;
+  for (size_t i = 0; i < game_ids.size(); i++) {
+    rep_ids.emplace_back(game_ids[i] >> 9ull);
+  }
+  /*
+  std::sort(rep_ids.begin(), rep_ids.end());
+  rep_ids.erase( std::unique(rep_ids.begin(), rep_ids.end()), rep_ids.end() );
+  std::cout << "# of unique Reputation Dynamics: " << rep_ids.size() << std::endl;
+   */
+
+  std::vector< std::array<size_t,3> > histo(18, {0,0,0});
+  for (uint64_t id: rep_ids) {
+    ReputationDynamics rd(id);
+    if ( rd.RepAt(Reputation::G, Reputation::G, Action::D) != Reputation::B ) {
+      throw std::runtime_error("must not happen");
+    }
+    for (size_t n = 0; n < 18; n++) {
+      histo[n][static_cast<int>(rd.reputations[n])]++;
+    }
+  }
+
+  // print results
+  std::cout << "         :        B       N       G" << std::endl;
+  for (size_t n = 0; n < 18; n++) {
+    Reputation rep_d = static_cast<Reputation>(n/6);
+    Reputation rep_r = static_cast<Reputation>((n/2) % 3);
+    Action act = static_cast<Action>(n % 2);
+    std::cout << "(" << rep_d << "->" << rep_r << "," << act << ") : "
+              << std::setw(8) << histo[n][0]
+              << std::setw(8) << histo[n][1]
+              << std::setw(8) << histo[n][2] << std::endl;
+  }
+}
+
+void PrintHistogramActionRules(const std::vector<uint64_t> game_ids) {
+  std::cout << "Histogram of ActionRules: " << std::endl;
+  std::vector< std::array<size_t,2> > histo(9, {0,0});
+  for (size_t i = 0; i < game_ids.size(); i++) {
+    uint64_t ar_id = (game_ids[i] & 511ull);
+    ActionRule ar(ar_id);
+    for (size_t n = 0; n < 9; n++) {
+      histo[n][static_cast<int>(ar.actions[n])]++;
+    }
+  }
+  for (size_t n = 0; n < 9; n++) {
+    Reputation rep_d = static_cast<Reputation>(n/3);
+    Reputation rep_r = static_cast<Reputation>(n%3);
+    std::cout << "(" << rep_d << "->" << rep_r << ") :"
+              << std::setw(8) << histo[n][0]
+              << std::setw(8) << histo[n][1] << std::endl;
+  }
+}
+
+void PrintHHisto(const std::vector<HistoNormalBin>& h_histo) {
+  assert( h_histo.size() == 3 );
+  std::cout << h_histo.size() << ' ' << h_histo[0].bin << std::endl;
+  std::cout << "H_B histo:" << std::endl;
+  auto histo0 = h_histo[0].Frequency();
+  for (const auto &keyval : histo0) {
+    std::cout << keyval.first << ' ' << keyval.second << std::endl;
+  }
+  std::cout << "H_N histo:" << std::endl;
+  auto histo1 = h_histo[1].Frequency();
+  for (const auto &keyval : histo1) {
+    std::cout << keyval.first << ' ' << keyval.second << std::endl;
+  }
+  std::cout << "H_G histo:" << std::endl;
+  auto histo2 = h_histo[2].Frequency();
+  for (const auto &keyval : histo2) {
+    std::cout << keyval.first << ' ' << keyval.second << std::endl;
+  }
+}
 
 int main(int argc, char* argv[]) {
 
@@ -556,10 +631,11 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("failed to open file");
   }
 
-  std::map<int, std::vector<uint64_t >> game_ids;
-  HistoNormalBin h0_histo(0.05);
-  HistoNormalBin h1_histo(0.05);
-  HistoNormalBin h2_histo(0.05);
+  const size_t N_TYPES = 14;
+  const double bin = 0.05;
+  using h_histo_t = std::vector<HistoNormalBin>;
+  std::vector<std::vector<uint64_t >> game_ids(N_TYPES);
+  std::vector<h_histo_t> h_histo(N_TYPES, h_histo_t(3, bin));
 
   while(fin) {
     uint64_t org_gid,gid;
@@ -568,93 +644,31 @@ int main(int argc, char* argv[]) {
     if (fin) {
       Game g(0.02, 0.02, gid, c_prob, {h0,h1,h2} );
       int i = ClassifyType(g);
-      game_ids[i].push_back(gid);
-    }
-    h0_histo.Add(h0);
-    h1_histo.Add(h1);
-    h2_histo.Add(h2);
-  }
-
-  for (auto p : game_ids) {
-    std::cerr << "type: " << p.first << ", " << p.second.size() << std::endl;
-  }
-
-  std::ofstream fout("non_L8.txt");
-  for (auto p : game_ids) {
-    if (p.first > 0) continue;
-    for (uint64_t gid : p.second) {
-      fout << p.first << ' ' << gid << std::endl;
+      game_ids.at(i).push_back(gid);
+      h_histo.at(i).at(0).Add(h0);
+      h_histo.at(i).at(1).Add(h1);
+      h_histo.at(i).at(2).Add(h2);
     }
   }
-  fout.close();
 
-  /*
-  {
-    std::vector<uint64_t> rep_ids;
-    for (size_t i = 0; i < game_ids.size(); i++) {
-      rep_ids.emplace_back(game_ids[i] >> 9ull);
-    }
-    std::sort(rep_ids.begin(), rep_ids.end());
-    rep_ids.erase( std::unique(rep_ids.begin(), rep_ids.end()), rep_ids.end() );
+  for (size_t i = 0; i < game_ids.size(); i++) {
+    std::cerr << "type: " << i << ", " << game_ids.at(i).size() << std::endl;
+  }
 
-    std::cout << "num_ESSs: " << game_ids.size() << std::endl
-              << "num_RepDynamics: " << rep_ids.size() << std::endl;
+  if (game_ids[0].size() > 0) {
+    std::ofstream fout("non_L8.txt");
+    for (auto gid: game_ids.at(0)) {
+      fout << gid << std::endl;
+    }
+    fout.close();
+  }
 
-    std::vector< std::array<size_t,3> > histo(18, {0,0,0});
-    for (uint64_t id: rep_ids) {
-      ReputationDynamics rd(id);
-      if ( rd.RepAt(Reputation::G, Reputation::G, Action::D) == Reputation::N ) {
-        rd = rd.Permute({1,0,2});
-      }
-      for (size_t n = 0; n < 18; n++) {
-        histo[n][static_cast<int>(rd.reputations[n])]++;
-      }
-    }
-    for (size_t n = 0; n < 18; n++) {
-      Reputation rep_d = static_cast<Reputation>(n/6);
-      Reputation rep_r = static_cast<Reputation>((n/2) % 3);
-      Action act = static_cast<Action>(n % 2);
-      std::ostringstream ss;
-      std::cout << "(" << rep_d << "->" << rep_r << "," << act << ") : " << std::setw(8)
-                << histo[n][0] << std::setw(8) << histo[n][1] << std::setw(8) << histo[n][2] << std::endl;
-    }
+  for (size_t i = 1; i < N_TYPES; i++) {
+    std::cout << "=================== TYPE " << i << "====================" << std::endl;
+    PrintHistogramRepDynamics(game_ids.at(i));
+    PrintHistogramActionRules(game_ids.at(i));
+    PrintHHisto(h_histo.at(i));
   }
-   */
-
-  /*
-  {
-    std::cout << "Histogram of ActionRules: " << std::endl;
-    std::vector< std::array<size_t,2> > histo(9, {0,0});
-    for (size_t i = 0; i < game_ids.size(); i++) {
-      uint64_t ar_id = (game_ids[i] & 511ull);
-      ActionRule ar(ar_id);
-      for (size_t n = 0; n < 9; n++) {
-        histo[n][static_cast<int>(ar.actions[n])]++;
-      }
-    }
-    for (size_t n = 0; n < 9; n++) {
-      std::cout << n << " : " << histo[n][0] << " " << histo[n][1] << std::endl;
-    }
-  }
-   */
-
-  /*
-  std::cout << "h0_histo:" << std::endl;
-  auto histo0 = h0_histo.Frequency();
-  for( const auto& keyval : histo0 ) {
-    std::cout << keyval.first << ' ' << keyval.second << std::endl;
-  }
-  std::cout << "h1_histo:" << std::endl;
-  auto histo1 = h1_histo.Frequency();
-  for( const auto& keyval : histo1 ) {
-    std::cout << keyval.first << ' ' << keyval.second << std::endl;
-  }
-  std::cout << "h2_histo:" << std::endl;
-  auto histo2 = h2_histo.Frequency();
-  for( const auto& keyval : histo2 ) {
-    std::cout << keyval.first << ' ' << keyval.second << std::endl;
-  }
-   */
 
   return 0;
 }
