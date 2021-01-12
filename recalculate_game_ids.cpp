@@ -49,12 +49,42 @@ int main(int argc, char* argv[]) {
     auto h = g.ResidentEqReputation();
 
     std::array<int,3> map;
-    if (h[0] >= h[1] && h[1] >= h[2]) { map = {2,1,0}; }
-    else if (h[0] >= h[2] && h[2] >= h[1]) { map = {2, 0, 1}; }
-    else if (h[1] >= h[0] && h[0] >= h[2]) { map = {1, 2, 0}; }
-    else if (h[1] >= h[2] && h[2] >= h[0]) { map = {0, 2, 1}; }
-    else if (h[2] >= h[1] && h[1] >= h[0]) { map = {0, 1, 2}; }
-    else if (h[2] >= h[0] && h[0] >= h[1]) { map = {1, 0, 2}; }
+    if (h[0] >= h[1] && h[0] >= h[2]) {
+      // 0: G
+      Reputation G = static_cast<Reputation>(0);
+      Reputation B = g.rep_dynamics.RepAt(G, G, Action::D);
+      if (static_cast<int>(B) == 1) {
+        map = {2,0,1};
+      }
+      else if (static_cast<int>(B) == 2) {
+        map = {2,1,0};
+      }
+      else { throw std::runtime_error("must not happen"); }
+    }
+    else if (h[1] >= h[0] && h[1] >= h[2]) {
+      // 1: G
+      Reputation G = static_cast<Reputation>(1);
+      Reputation B = g.rep_dynamics.RepAt(G, G, Action::D);
+      if (static_cast<int>(B) == 0) {
+        map = {0,2,1};
+      }
+      else if (static_cast<int>(B) == 2) {
+        map = {1,2,0};
+      }
+      else { throw std::runtime_error("must not happen"); }
+    }
+    else if (h[2] >= h[0] && h[2] >= h[1]) {
+      // 2: G
+      Reputation G = static_cast<Reputation>(2);
+      Reputation B = g.rep_dynamics.RepAt(G, G, Action::D);
+      if (static_cast<int>(B) == 0) {
+        map = {0,1,2};
+      }
+      else if (static_cast<int>(B) == 1) {
+        map = {1,0,2};
+      }
+      else { throw std::runtime_error("must not happen"); }
+    }
     else { throw std::runtime_error("must not happen"); }
 
     ReputationDynamics new_repd = g.rep_dynamics.Permute(map);
