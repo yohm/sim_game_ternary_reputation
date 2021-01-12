@@ -45,19 +45,15 @@ class HistoNormalBin {
 
 
 int ClassifyType(const Game& g) {
-  ReputationDynamics rd = g.rep_dynamics;
-  ActionRule ar = g.resident_ar;
+  const ReputationDynamics rd = g.rep_dynamics;
+  const ActionRule ar = g.resident_ar;
 
   const Reputation B = Reputation::B, N = Reputation::N, G = Reputation::G;
   const Action D = Action::D, C = Action::C;
 
   // GGd => B
-  if (rd.RepAt(G, G, D) == N) {
-    rd = rd.Permute({1,0,2});  // swap N and B. Regard N as B
-    ar = ar.Permute({1,0,2});
-  }
-  else if (rd.RepAt(G, G, D) == G) {
-    throw std::runtime_error("GGd cannot be G");
+  if (rd.RepAt(G, G, D) != B) {
+    throw std::runtime_error("must not happen");
   }
 
   auto GorN = [](Reputation x)->bool { return (x == G || x == N); };
