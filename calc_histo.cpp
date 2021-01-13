@@ -46,7 +46,7 @@ class HistoNormalBin {
 };
 
 
-int ClassifyType(const Game& g) {
+int ClassifyType(Game& g) {
   const ReputationDynamics rd = g.rep_dynamics;
   const ActionRule ar = g.resident_ar;
 
@@ -62,50 +62,6 @@ int ClassifyType(const Game& g) {
 
   std::set<int> types;
 
-  // type-13: G and N works as G for the leading eight, and B defects N and recovers a good reputation.
-  //          Even though AllD player can eventually gain G reputation, she must spent a long time in B reputation since N players are not frequent. Thus, being a defector does not pay off.
-  // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
-  // GG => c, GN => c, NG => c, NN => c
-  // GGd => B, GNd => B, NGd => B, NNd => B
-  // GB => d, NB => d
-  // ---
-  // GBd => [GN], NBd => [GN]
-  // BGc => [GN], BNd => [GN]
-  // BG => c, BN => d
-  // BGd => B
-  if (
-    GorN(rd.RepAt(G, G, C))
-    && GorN(rd.RepAt(G, N, C))
-    && GorN(rd.RepAt(N, G, C))
-    && GorN(rd.RepAt(N, N, C))
-    // ---
-    && ar.ActAt(G, G) == C
-    && ar.ActAt(G, N) == C
-    && ar.ActAt(N, G) == C
-    && ar.ActAt(N, N) == C
-    // ---
-    && rd.RepAt(G, G, D) == B
-    && rd.RepAt(G, N, D) == B
-    && rd.RepAt(N, G, D) == B
-    && rd.RepAt(N, N, D) == B
-    // ---
-    && ar.ActAt(G, B) == D
-    && ar.ActAt(N, B) == D
-    // ---------------
-    && GorN(rd.RepAt(G, B, D))
-    && GorN(rd.RepAt(N, B, D))
-    // ---
-    && GorN(rd.RepAt(B, G, C))
-    && GorN(rd.RepAt(B, N, D))
-    // ---
-    && ar.ActAt(B, G) == C
-    && ar.ActAt(B, N) == D
-    // ---
-    && rd.RepAt(B, G, D) == B
-    ) {
-    types.insert(13);
-    // return 13;
-  }
   // type-1: leading-eight like
   // GGc => G
   // GG => c
@@ -116,6 +72,10 @@ int ClassifyType(const Game& g) {
   // BGc => G
   // BG => c
   // BGd => !G
+  // ---
+  // N population is negligible
+  //    - GN P_{GN} => !N
+  //    - NG P_{NG} => !N
   if (
     rd.RepAt(G, G, C) == G
     && ar.ActAt(G, G) == C
@@ -126,14 +86,23 @@ int ClassifyType(const Game& g) {
     && rd.RepAt(B, G, C) == G
     && ar.ActAt(B, G) == C
     && rd.RepAt(B, G, D) != G
+    && rd.RepAt(G, N, ar.ActAt(G, N)) != N
+    && rd.RepAt(N, G, ar.ActAt(N, G)) != N
     ) {
     types.insert(1);
   }
   // type-2: Bad players recover cooperation via being N
+  //    - GGc => G
+  //    - GG => c
+  //    - GGd => B
+  //    - GB => d
   //    - GBd => G  // justification of the punishment
   //    - BG P_{BG} => N  // recovers cooperation via N
   //    - NG P_{NG} => G
   //    - BG => c or NG => c
+  // ---
+  // N population is negligible
+  //    - GN P_{GN} => !N
   if (
     rd.RepAt(G, G, C) == G
     && ar.ActAt(G, G) == C
@@ -144,6 +113,7 @@ int ClassifyType(const Game& g) {
     && rd.RepAt(B, G, ar.ActAt(B, G)) == N
     && rd.RepAt(N, G, ar.ActAt(N, G)) == G
     && (ar.ActAt(B, G) == C || ar.ActAt(N, G) == C)
+    && rd.RepAt(G, N, ar.ActAt(G, N)) != N
     ) {
     types.insert(2);
   }
@@ -152,6 +122,9 @@ int ClassifyType(const Game& g) {
   //    - BGc => G
   //    - BG => c
   //    - NG P_{NG} => G
+  // ---
+  // N population is negligible
+  //    - GN P_{GN} => !N
   if (
     rd.RepAt(G, G, C) == G
     && ar.ActAt(G, G) == C
@@ -162,6 +135,7 @@ int ClassifyType(const Game& g) {
     && rd.RepAt(B, G, C) == G
     && ar.ActAt(B, G) == C
     && rd.RepAt(N, G, ar.ActAt(N, G)) == G
+    && rd.RepAt(G, N, ar.ActAt(G, N)) != N
     ) {
     types.insert(3);
   }
@@ -170,6 +144,9 @@ int ClassifyType(const Game& g) {
   //    - BGc => N
   //    - BG => c
   //    - NG P_{NG} => G
+  // ---
+  // N population is negligible
+  //    - GN P_{GN} => !N
   if (
     rd.RepAt(G, G, C) == G
     && ar.ActAt(G, G) == C
@@ -180,6 +157,7 @@ int ClassifyType(const Game& g) {
     && rd.RepAt(B, G, C) == N
     && ar.ActAt(B, G) == C
     && rd.RepAt(N, G, ar.ActAt(N, G)) == G
+    && rd.RepAt(G, N, ar.ActAt(G, N)) != N
     ) {
     types.insert(4);
   }
@@ -339,8 +317,7 @@ int ClassifyType(const Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   if (
-    rd.RepAt(G, G, C) == N
-    // GorN(rd.RepAt(G, G, C))
+    GorN(rd.RepAt(G, G, C))
     && GorN(rd.RepAt(G, N, C))
     && GorN(rd.RepAt(N, G, C))
     && GorN(rd.RepAt(N, N, D))
@@ -373,7 +350,7 @@ int ClassifyType(const Game& g) {
   }
   // type-9: G and N works as G for the leading eight, but N-N defects each other and B defects against N (similar to type 8 but differ in `BN`)
   //         defection of B against N does not always cause Bad reputation
-  // GGc => N, GNc => [GN], NGc => [GN], NNd => [GN]
+  // GGc => [GN], GNc => [GN], NGc => [GN], NNd => [GN]
   // GG => c, GN => c, NG => c, NN => d
   // GGd => B, GNd => B, NGd => B
   // GB => d, NB => d
@@ -383,8 +360,7 @@ int ClassifyType(const Game& g) {
   // BG => c, *BN => d*
   // BGd => B
   if (
-    // GorN(rd.RepAt(G, G, C))
-    rd.RepAt(G, G, C) == N
+    GorN(rd.RepAt(G, G, C))
     && GorN(rd.RepAt(G, N, C))
     && GorN(rd.RepAt(N, G, C))
     && GorN(rd.RepAt(N, N, D))
@@ -542,14 +518,67 @@ int ClassifyType(const Game& g) {
     ) {
     types.insert(12);
   }
+  // type-13: G and N works as G for the leading eight, and B defects N and recovers a good reputation.
+  //          Even though AllD player can eventually gain G reputation, she must spent a long time in B reputation since N players are not frequent. Thus, being a defector does not pay off.
+  // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
+  // GG => c, GN => c, NG => c, NN => c
+  // GGd => B, GNd => B, NGd => B, NNd => B
+  // GB => d, NB => d
+  // ---
+  // GBd => [GN], NBd => [GN]
+  // BGc => [GN], BNd => [GN]
+  // BG => c, BN => d
+  // BGd => B
+  if (
+    GorN(rd.RepAt(G, G, C))
+    && GorN(rd.RepAt(G, N, C))
+    && GorN(rd.RepAt(N, G, C))
+    && GorN(rd.RepAt(N, N, C))
+    // ---
+    && ar.ActAt(G, G) == C
+    && ar.ActAt(G, N) == C
+    && ar.ActAt(N, G) == C
+    && ar.ActAt(N, N) == C
+    // ---
+    && rd.RepAt(G, G, D) == B
+    && rd.RepAt(G, N, D) == B
+    && rd.RepAt(N, G, D) == B
+    && rd.RepAt(N, N, D) == B
+    // ---
+    && ar.ActAt(G, B) == D
+    && ar.ActAt(N, B) == D
+    // ---------------
+    && GorN(rd.RepAt(G, B, D))
+    && GorN(rd.RepAt(N, B, D))
+    // ---
+    && GorN(rd.RepAt(B, G, C))
+    && GorN(rd.RepAt(B, N, D))
+    // ---
+    && ar.ActAt(B, G) == C
+    && ar.ActAt(B, N) == D
+    // ---
+    && rd.RepAt(B, G, D) == B
+    ) {
+    types.insert(13);
+    // return 13;
+  }
 
   int t = 0;
-  if (types.size() > 1) {
+  if (types.size() > 0) {
+    /*
     for (int t: types) {
       std::cerr << t << ' ';
     }
     std::cerr << std::endl;
+    std::cerr << g.Inspect();
+    throw std::runtime_error("duplicate types");
+     */
     t = *types.begin();
+  }
+  else {
+    std::cerr << std::endl;
+    std::cerr << g.Inspect();
+    throw std::runtime_error("duplicate types");
   }
 
   return t;
