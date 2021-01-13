@@ -29,7 +29,15 @@ class Game {
        << "(mu_e, mu_a): (" << mu_e << ", " << mu_a << ")" << std::endl
        << "--- " << rep_dynamics.Inspect()
        << "--- " << resident_ar.Inspect()
-       << "(c_porb,h0,h1,h2): " << ResidentCoopProb() << ' ' << h[0] << ' ' << h[1] << ' ' << h[2] << std::endl;
+       << "--- Transition of residents" << std::endl;
+    for (int i = 0; i < 9; i++) {
+      Reputation X = static_cast<Reputation>(i/3);
+      Reputation Y = static_cast<Reputation>(i%3);
+      auto ar = At(X, Y);
+      ss << "(" << X << "->" << Y << "): " << ar.first << ar.second;
+      ss << ((i % 3 == 2) ? "\n" : "\t");
+    }
+    ss << "(c_porb,h0,h1,h2): " << ResidentCoopProb() << ' ' << h[0] << ' ' << h[1] << ' ' << h[2] << std::endl;
     return ss.str();
   }
   uint64_t ID() const {
@@ -40,6 +48,11 @@ class Game {
   const double mu_e, mu_a;
   const ReputationDynamics rep_dynamics;
   const ActionRule resident_ar;
+  std::pair<Action,Reputation> At(Reputation donor, Reputation recipient) {
+    Action a = resident_ar.ActAt(donor, recipient);
+    Reputation r = rep_dynamics.RepAt(donor, recipient, a);
+    return std::make_pair(a, r);
+  }
   bool IsESS(double benefit, double cost) {
     CalcHStarResident();
     double res_payoff = (benefit-cost) * resident_coop_prob;
