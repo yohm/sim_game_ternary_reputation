@@ -66,35 +66,28 @@ int ClassifyType(Game& g) {
   // N population is negligible
   //  (NG => !N or NN => !N) and (NG => N or GN => !N)
   //  = (NG => !N and GN => !N) or (NG => N and NN => !N) or (NN => !N and GN => !N)
-  auto N_is_minor = [&rd, &ar,G,N,B]()->bool {
-    Reputation ng = rd.RepAt(N, G, ar.ActAt(N, G));
-    Reputation gn = rd.RepAt(G, N, ar.ActAt(G, N));
-    Reputation nn = rd.RepAt(N, N, ar.ActAt(N, N));
-    return (ng != N || nn != N) && (ng == N || gn != N);
+  auto N_is_minor = [&g,G,N,B]()->bool {
+    Reputation ng = g.At(N, G).second;
+    Reputation gn = g.At(G, N).second;
+    Reputation nn = g.At(N, N).second;
+    return (ng != N && gn != N) || (nn != N || gn != N) || (ng != N && nn != N);
   };
 
   std::set<int> types;
 
   // type-1: leading-eight like
-  // GGc => G
-  // GG => c
+  // GG => cG
   // GGd => B
-  // GB => d
-  // ---
-  // GBd => G
-  // BGc => G
-  // BG => c
+  // GB => dG
+  // BG => cG
   // BGd => !G
   // ---
   // N population is minor
   if (
     ap(G, G, C, G)
     && rd.RepAt(G, G, D) == B
-    && ar.ActAt(G, B) == D
-    // ---------------
-    && rd.RepAt(G, B, D) == G
-    && rd.RepAt(B, G, C) == G
-    && ar.ActAt(B, G) == C
+    && ap(G, B, D, G)
+    && ap(B, G, C, G)
     && rd.RepAt(B, G, D) != G
     && N_is_minor()
     ) {
