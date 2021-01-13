@@ -94,47 +94,37 @@ int ClassifyType(Game& g) {
     types.insert(1);
   }
   // type-2: Bad players recover cooperation via being N
-  //    - GGc => G
-  //    - GG => c
+  //    - GG => cG
   //    - GGd => B
-  //    - GB => d
-  //    - GBd => G  // justification of the punishment
-  //    - BG P_{BG} => N  // recovers cooperation via N
-  //    - NG P_{NG} => G
+  //    - GB => dG
+  //    - BG => *N  // recovers cooperation via N
+  //    - NG => *G
   //    - BG => c or NG => c
   // ---
   // N population is minor
   if (
-    rd.RepAt(G, G, C) == G
-    && ar.ActAt(G, G) == C
+    ap(G, G, C, G)
     && rd.RepAt(G, G, D) == B
-    && ar.ActAt(G, B) == D
-    // ---------------
-    && rd.RepAt(G, B, D) == G
-    && rd.RepAt(B, G, ar.ActAt(B, G)) == N
-    && rd.RepAt(N, G, ar.ActAt(N, G)) == G
+    && ap(G, B, D, G)
+    && g.At(B, G).second == N
+    && g.At(N, G).second == G
     && (ar.ActAt(B, G) == C || ar.ActAt(N, G) == C)
     && N_is_minor()
     ) {
     types.insert(2);
   }
   // type-3: punisher has N reputation. Bad players recover G by cooperating with G player.
-  //    - GBd => N  // punisher has N reputation
-  //    - BGc => G
-  //    - BG => c
-  //    - NG P_{NG} => G
+  //    - GB => dN  // punisher has N reputation
+  //    - BG => cG
+  //    - NG => *G
   // ---
   // N population is minor
   if (
-    rd.RepAt(G, G, C) == G
-    && ar.ActAt(G, G) == C
+    ap(G, G, C, G)
     && rd.RepAt(G, G, D) == B
-    && ar.ActAt(G, B) == D
-    // ---------------
-    && rd.RepAt(G, B, D) == N
-    && rd.RepAt(B, G, C) == G
-    && ar.ActAt(B, G) == C
-    && rd.RepAt(N, G, ar.ActAt(N, G)) == G
+    && ap(G, B, D, N)
+    && ap(B, G, C, G)
+    && g.At(N, G).second == G
     && N_is_minor()
     ) {
     types.insert(3);
@@ -147,15 +137,11 @@ int ClassifyType(Game& g) {
   // ---
   // N population is minor
   if (
-    rd.RepAt(G, G, C) == G
-    && ar.ActAt(G, G) == C
+    ap(G, G, C, G)
     && rd.RepAt(G, G, D) == B
-    && ar.ActAt(G, B) == D
-    // ---------------
-    && rd.RepAt(G, B, D) == N
-    && rd.RepAt(B, G, C) == N
-    && ar.ActAt(B, G) == C
-    && rd.RepAt(N, G, ar.ActAt(N, G)) == G
+    && ap(G, B, D, N)
+    && ap(B, G, C, N)
+    && g.At(N, G).second == G
     && N_is_minor()
     ) {
     types.insert(4);
