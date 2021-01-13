@@ -60,6 +60,18 @@ int ClassifyType(Game& g) {
   }
 
   auto GorN = [](Reputation x)->bool { return (x == G || x == N); };
+  auto ap = [&g](Reputation donor, Reputation recip, Action a, Reputation r)->bool { // assert prescription
+    return g.At(donor, recip) == std::make_pair(a, r);
+  };
+  // N population is negligible
+  //  (NG => !N or NN => !N) and (NG => N or GN => !N)
+  //  = (NG => !N and GN => !N) or (NG => N and NN => !N) or (NN => !N and GN => !N)
+  auto N_is_minor = [&rd, &ar,G,N,B]()->bool {
+    Reputation ng = rd.RepAt(N, G, ar.ActAt(N, G));
+    Reputation gn = rd.RepAt(G, N, ar.ActAt(G, N));
+    Reputation nn = rd.RepAt(N, N, ar.ActAt(N, N));
+    return (ng != N || nn != N) && (ng == N || gn != N);
+  };
 
   std::set<int> types;
 
@@ -74,12 +86,9 @@ int ClassifyType(Game& g) {
   // BG => c
   // BGd => !G
   // ---
-  // N population is negligible
-  //    - GN P_{GN} => !N
-  //    - NG P_{NG} => !N
+  // N population is minor
   if (
-    rd.RepAt(G, G, C) == G
-    && ar.ActAt(G, G) == C
+    ap(G, G, C, G)
     && rd.RepAt(G, G, D) == B
     && ar.ActAt(G, B) == D
     // ---------------
@@ -87,8 +96,7 @@ int ClassifyType(Game& g) {
     && rd.RepAt(B, G, C) == G
     && ar.ActAt(B, G) == C
     && rd.RepAt(B, G, D) != G
-    && rd.RepAt(G, N, ar.ActAt(G, N)) != N
-    && rd.RepAt(N, G, ar.ActAt(N, G)) != N
+    && N_is_minor()
     ) {
     types.insert(1);
   }
@@ -102,8 +110,7 @@ int ClassifyType(Game& g) {
   //    - NG P_{NG} => G
   //    - BG => c or NG => c
   // ---
-  // N population is negligible
-  //    - GN P_{GN} => !N
+  // N population is minor
   if (
     rd.RepAt(G, G, C) == G
     && ar.ActAt(G, G) == C
@@ -114,7 +121,7 @@ int ClassifyType(Game& g) {
     && rd.RepAt(B, G, ar.ActAt(B, G)) == N
     && rd.RepAt(N, G, ar.ActAt(N, G)) == G
     && (ar.ActAt(B, G) == C || ar.ActAt(N, G) == C)
-    && rd.RepAt(G, N, ar.ActAt(G, N)) != N
+    && N_is_minor()
     ) {
     types.insert(2);
   }
@@ -124,8 +131,7 @@ int ClassifyType(Game& g) {
   //    - BG => c
   //    - NG P_{NG} => G
   // ---
-  // N population is negligible
-  //    - GN P_{GN} => !N
+  // N population is minor
   if (
     rd.RepAt(G, G, C) == G
     && ar.ActAt(G, G) == C
@@ -136,7 +142,7 @@ int ClassifyType(Game& g) {
     && rd.RepAt(B, G, C) == G
     && ar.ActAt(B, G) == C
     && rd.RepAt(N, G, ar.ActAt(N, G)) == G
-    && rd.RepAt(G, N, ar.ActAt(G, N)) != N
+    && N_is_minor()
     ) {
     types.insert(3);
   }
@@ -146,8 +152,7 @@ int ClassifyType(Game& g) {
   //    - BG => c
   //    - NG P_{NG} => G
   // ---
-  // N population is negligible
-  //    - GN P_{GN} => !N
+  // N population is minor
   if (
     rd.RepAt(G, G, C) == G
     && ar.ActAt(G, G) == C
@@ -158,7 +163,7 @@ int ClassifyType(Game& g) {
     && rd.RepAt(B, G, C) == N
     && ar.ActAt(B, G) == C
     && rd.RepAt(N, G, ar.ActAt(N, G)) == G
-    && rd.RepAt(G, N, ar.ActAt(G, N)) != N
+    && N_is_minor()
     ) {
     types.insert(4);
   }
@@ -567,19 +572,21 @@ int ClassifyType(Game& g) {
   int t = 0;
   if (types.size() > 0) {
     /*
-    for (int t: types) {
-      std::cerr << t << ' ';
+    if (types.size() > 1) {
+      for (int t: types) {
+        std::cerr << t << ' ';
+      }
+      std::cerr << std::endl;
+      std::cerr << g.Inspect();
+      throw std::runtime_error("duplicate types");
     }
-    std::cerr << std::endl;
-    std::cerr << g.Inspect();
-    throw std::runtime_error("duplicate types");
      */
     t = *types.begin();
   }
   else {
     std::cerr << std::endl;
     std::cerr << g.Inspect();
-    throw std::runtime_error("duplicate types");
+    throw std::runtime_error("unknown types");
   }
 
   return t;
