@@ -21,6 +21,7 @@ class HistoNormalBin {
   }
   std::map<double,double> Frequency() const {
     std::map<double,double> result;
+    if (histo.empty()) { return result;}
     int key_min = histo.begin()->first;
     int key_max = histo.rbegin()->first;
     for( int i = key_min; i <= key_max; i++ ) {
