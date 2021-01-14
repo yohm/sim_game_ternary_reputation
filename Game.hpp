@@ -48,7 +48,7 @@ class Game {
   const double mu_e, mu_a;
   const ReputationDynamics rep_dynamics;
   const ActionRule resident_ar;
-  std::pair<Action,Reputation> At(Reputation donor, Reputation recipient) {
+  std::pair<Action,Reputation> At(Reputation donor, Reputation recipient) const {
     Action a = resident_ar.ActAt(donor, recipient);
     Reputation r = rep_dynamics.RepAt(donor, recipient, a);
     return std::make_pair(a, r);
