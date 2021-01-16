@@ -160,17 +160,17 @@ int ClassifyType(Game& g) {
   // N population is negligible when
   //  (NG => !N or NN => !N) and (NG => N or GN => !N)
   //  = (NG => !N and GN => !N) or (NG => N and NN => !N) or (NN => !N and GN => !N)
-  bool N_is_minor = false;
+  bool G_dominant = false;
   {
     Reputation gg = g.At(G, G).second;
-    int num = 0;
+    int num_n = 0;
     Reputation ng = g.At(N, G).second;
     Reputation gn = g.At(G, N).second;
     Reputation nn = g.At(N, N).second;
-    if (ng == N) num++;
-    if (gn == N) num++;
-    if (nn == N) num++;
-    N_is_minor = (gg == G && num < 2);
+    if (ng == N) num_n++;
+    if (gn == N) num_n++;
+    if (nn == N) num_n++;
+    G_dominant = (gg == G && num_n < 2);
   };
 
   std::set<int> types;
@@ -185,61 +185,63 @@ int ClassifyType(Game& g) {
   // N population is minor
   if (
     Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cG", "BGd:[BN]"}).empty()
-    && N_is_minor
+    && G_dominant
     ) {
     types.insert(1);
   }
   // type-2: Bad players recover cooperation via being N
-  //    - GG => cG
-  //    - GGd => B
-  //    - GB => dG
-  //    - BG => *N  // recovers cooperation via N
-  //    - NG => *G
-  //    - BG => c or NG => c
-  // ---
-  // N population is minor
   if (
     Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cN", "NG:cG"}).empty()
-    && N_is_minor
+    && G_dominant
     ) {
     types.insert(2);
   }
   if (
     Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cN", "NG:cN", "NN:*G"}).empty()
-    && N_is_minor
+    && G_dominant
     ) {
     types.insert(2);
   }
   if (
     Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cN", "NG:dG"}).empty()
-    && N_is_minor
+    && G_dominant
     ) {
     types.insert(2);
   }
   if (
     Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:dN", "NG:cG"}).empty()
-    && N_is_minor
+    && G_dominant
     ) {
     types.insert(2);
   }
   // type-3: punisher has N reputation. Bad players recover G by cooperating with G player.
-  //    - GB => dN  // punisher has N reputation
-  //    - BG => cG
-  //    - NG => *G
-  // ---
-  // N population is minor
   if (
     Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cG", "NG:*G"}).empty()
-    && N_is_minor
+    && G_dominant
     ) {
     types.insert(3);
   }
   if (
     Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cG", "NN:*G"}).empty()
-    && N_is_minor
+    && G_dominant
     ) {
     types.insert(3);
   }
+  // type-3-1: punisher has B reputation. Bad players recover G via being N.
+  if (
+    Match(g, {"GG:cG", "GGd:B", "GB:dB", "BG:cN", "NG:*G"}).empty()
+    && G_dominant
+    ) {
+    types.insert(3);
+  }
+  // type-3-1: punisher has B reputation.
+  if (
+    Match(g, {"GG:cG", "GGd:B", "GB:dB", "BG:cG"}).empty()
+    && G_dominant
+    ) {
+    types.insert(3);
+  }
+
   // type-4: punisher has N reputation. Bad players recover G via being N.
   //    - GBd => N  // punisher has N reputation
   //    - BGc => N
@@ -249,28 +251,17 @@ int ClassifyType(Game& g) {
   // N population is minor
   if (
     Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cN", "NG:*G"}).empty()
-    && N_is_minor
+    && G_dominant
     ) {
     types.insert(4);
   }
   if (
     Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cN", "NG:cN", "NN:*G"}).empty()
-    && N_is_minor
+    && G_dominant
     ) {
     types.insert(4);
   }
   // type-5: G and N works as G for the leading eight
-  // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
-  // GG => c, GN => c, NG => c, NN => c
-  // GGd => B, GNd => B, NGd => B, NNd => B
-  // GB => d, NB => d
-  // ---
-  // GBd => [GN], NBd => [GN]
-  // BGc => [GN], BNc => [GN]
-  // BG => c, BN => c
-  // BGd => B, BNd => B
-  // ---
-  // N is not minor
   if (
     Match(g, {
       "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
@@ -279,20 +270,11 @@ int ClassifyType(Game& g) {
       "BG:c[GN]", "BN:c[GN]",
       "BGd:B", "BNd:B"
       }).empty()
-    && !N_is_minor
+    && !G_dominant
     ) {
     types.insert(5);
   }
   // type-6: G and N works as G for the leading eight, but punishment by N is not justified
-  // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
-  // GG => c, GN => c, NG => c, NN => c
-  // GGd => B, GNd => B, NGd => B, NNd => B
-  // GB => d, NB => d
-  // ---
-  // GB => d[GN] and NBd => B  // only difference from type 5
-  // BGc => [GN], BNc => [GN]
-  // BG => c, BN => c
-  // BGd => B, BNd => B
   if (
     (
       Match(g, {
@@ -303,52 +285,37 @@ int ClassifyType(Game& g) {
         "BGd:B", "BNd:B"
       }).empty()
     )
-    && !N_is_minor
+    && !G_dominant
     ) {
     types.insert(6);
   }
-  // type-7: G and N works as G for the leading eight, but B players cooperate only with G or N
+  // type-7: G and N works as G for the leading eight, but B players cooperate only with either G or N
   //      punishment by N against B may not always be justified
-  // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
-  // GG => c, GN => c, NG => c, NN => c
-  // GGd => B, GNd => B, NGd => B, NNd => B
-  // GB => d, NB => d
-  // ---
-  // GBd => [GN]
-  // (BG => c and BGc => [GN] and BN => d) or (BN => c and BNc => [GN] and BG => d)
-  // BGd => B, BNd => B
   if (
-    (
       Match(g, {
         "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
         "GGd:B", "GNd:B", "NGd:B", "NNd:B",
         "GB:d[GN]",
-        "BG:c[GN]", "BN:d*",
-        "BGd:B", "BNd:B"
+        "BG:c[GN]", "BN:dB",
+        "BGd:B"
       }).empty()
-      ||
+      && !G_dominant
+    ) {
+    types.insert(7);
+  }
+  if (
       Match(g, {
         "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
         "GGd:B", "GNd:B", "NGd:B", "NNd:B",
         "GB:d[GN]",
-        "BN:c[GN]", "BG:d*",
-        "BGd:B", "BNd:B"
+        "BN:c[GN]", "BG:dB",
+        "BNd:B"
       }).empty()
-    )
-    && !N_is_minor
+      && !G_dominant
     ) {
     types.insert(7);
   }
   // type-8: G and N works as G for the leading eight, but N-N defects each other
-  // GGc => [GN], GNc => [GN], NGc => [GN], *NNd => [GN]*
-  // GG => c, GN => c, NG => c, *NN => d*
-  // GGd => B, GNd => B, NGd => B
-  // GB => d, NB => d
-  // ---
-  // GBd => [GN], NBd => [GN]
-  // BGc => [GN], BNc => [GN]
-  // BG => c, BN => c
-  // BGd => B, BNd => B
   if (
     Match(g, {
       "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
@@ -357,21 +324,13 @@ int ClassifyType(Game& g) {
       "BG:c[GN]", "BN:c[GN]",
       "BGd:B", "BNd:B"
     }).empty()
-    && !N_is_minor
+    && !G_dominant
     ) {
     types.insert(8);
   }
-  // type-9: G and N works as G for the leading eight, but N-N defects each other and B defects against N (similar to type 8 but differ in `BN`)
+  // type-9: G and N works as G for the leading eight, but N-N defects each other
+  //         B cooperates with G but defects against N (similar to type 8 but differ in `BN`)
   //         defection of B against N does not always cause Bad reputation
-  // GGc => [GN], GNc => [GN], NGc => [GN], NNd => [GN]
-  // GG => c, GN => c, NG => c, NN => d
-  // GGd => B, GNd => B, NGd => B
-  // GB => d, NB => d
-  // ---
-  // GBd => [GN], NBd => [GN]
-  // BGc => [GN]
-  // BG => c, *BN => d*
-  // BGd => B
   if (
     Match(g, {
       "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
@@ -380,20 +339,12 @@ int ClassifyType(Game& g) {
       "BG:c[GN]", "BN:d*",
       "BGd:B"
     }).empty()
-    && !N_is_minor
+    && !G_dominant
     ) {
     types.insert(9);
   }
-  // type-10: G and N works as G for the leading eight, but N-N defects each other and punishment of N against B causes a Bad reputation
-  // GGc => [GN], GNc => [GN], NGc => [GN], NNd => [GN]
-  // GG => c, GN => c, NG => c, NN => d
-  // GGd => B, GNd => B, NGd => B
-  // GB => d, NB => d
-  // ---
-  // GBd => [GN], NBd => B
-  // BGc => [GN], BNc => [GN]
-  // BG => c, BN => c
-  // BGd => B, BNd => B
+  // type-10: G and N works as G for the leading eight, but N-N defects each other
+  //          punishment of N against B causes a Bad reputation
   if (
     Match(g, {
       "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
@@ -402,21 +353,13 @@ int ClassifyType(Game& g) {
       "BG:c[GN]", "BN:c[GN]",
       "BGd:B", "BNd:B"
     }).empty()
-    && !N_is_minor
+    && !G_dominant
     ) {
     types.insert(10);
   }
-  // type-11: G and N works as G for the leading eight, but N-N defects each other, and punishment of N against B causes a Bad reputation, and B defects against N
+  // type-11: G and N works as G for the leading eight, but N-N defects each other
+  //          punishment of N against B causes a Bad reputation, and B defects against N
   //          hybrid of type 9 and 10
-  // GGc => [GN], GNc => [GN], NGc => [GN], NNd => [GN]
-  // GG => c, GN => c, NG => c, NN => d
-  // GGd => B, GNd => B, NGd => B
-  // GB => d, NB => d
-  // ---
-  // GBd => [GN], NBd => B
-  // BGc => [GN]
-  // BG => c, BN => c
-  // BGd => B
   if (
     Match(g, {
       "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
@@ -425,23 +368,15 @@ int ClassifyType(Game& g) {
       "BG:c[GN]", "BN:d*",
       "BGd:B"
     }).empty()
-    && !N_is_minor
+    && !G_dominant
     ) {
     types.insert(11);
   }
-  // type-12: G and N works as G for the leading eight, but N can maintain G reputation when making a mistake.
+  // type-12: G and N works as G for the leading eight
+  //          N can maintain G reputation when making a mistake.
   //          Only the punishment by N against B is justified.
   //          The highest reputation in this case is N since it has a right to punish others.
   //          a variant of type-6
-  // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
-  // GG => c, GN => c, NG => c, NN => c
-  // GGd => B, GNd => B, **NGd => [GB], NNd => [GB]**
-  // GB => d, NB => d
-  // ---
-  // NBd => [GN] and GBd => B  **
-  // BGc => [GN], BNc => [GN]
-  // BG => c, BN => c
-  // BGd => B, BNd => B
   if (
     Match(g, {
       "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
@@ -450,21 +385,13 @@ int ClassifyType(Game& g) {
       "BG:c[GN]", "BN:c[GN]",
       "BGd:B", "BNd:B"
     }).empty()
-    && !N_is_minor
+    && !G_dominant
     ) {
     types.insert(12);
   }
-  // type-13: G and N works as G for the leading eight, and B defects N and recovers a good reputation.
+  // type-13: G and N works as G for the leading eight
+  //          B and recovers a good reputation by defecting against N.
   //          Even though AllD player can eventually gain G reputation, she must spent a long time in B reputation since N players are not frequent. Thus, being a defector does not pay off.
-  // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
-  // GG => c, GN => c, NG => c, NN => c
-  // GGd => B, GNd => B, NGd => B, NNd => B
-  // GB => d, NB => d
-  // ---
-  // GBd => [GN], NBd => [GN]
-  // BGc => [GN], BNd => [GN]
-  // BG => c, BN => d
-  // BGd => B
   if (
     Match(g, {
       "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
@@ -473,7 +400,7 @@ int ClassifyType(Game& g) {
       "BG:c[GN]", "BN:d[GN]",
       "BGd:B"
     }).empty()
-    && !N_is_minor
+    && !G_dominant
     ) {
     types.insert(13);
     // return 13;
@@ -487,6 +414,7 @@ int ClassifyType(Game& g) {
       }
       std::cerr << std::endl;
       std::cerr << g.Inspect();
+      std::cerr << "G_dominant: " << G_dominant << std::endl;
       throw std::runtime_error("duplicate types");
     }
     t = *types.begin();
@@ -494,6 +422,7 @@ int ClassifyType(Game& g) {
   else {
     std::cerr << std::endl;
     std::cerr << g.Inspect();
+    std::cerr << "G_dominant: " << G_dominant << std::endl;
     throw std::runtime_error("unknown types");
   }
 
