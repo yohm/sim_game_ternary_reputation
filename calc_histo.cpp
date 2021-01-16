@@ -157,10 +157,10 @@ int ClassifyType(Game& g) {
     throw std::runtime_error("must not happen");
   }
 
-  // N population is negligible when
-  //  (NG => !N or NN => !N) and (NG => N or GN => !N)
-  //  = (NG => !N and GN => !N) or (NG => N and NN => !N) or (NN => !N and GN => !N)
-  bool G_dominant = false;
+  // G population is dominant
+  //   when GG => *G
+  //   at most one of GN, NG, NN go to N
+  bool G_dominant;
   {
     Reputation gg = g.At(G, G).second;
     int num_n = 0;
@@ -176,13 +176,6 @@ int ClassifyType(Game& g) {
   std::set<int> types;
 
   // type-1: leading-eight like
-  // GG => cG
-  // GGd => B
-  // GB => dG
-  // BG => cG
-  // BGd => !G
-  // ---
-  // N population is minor
   if (
     Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cG", "BGd:[BN]"}).empty()
     && G_dominant
