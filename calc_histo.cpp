@@ -7,6 +7,7 @@
 #include <chrono>
 #include <fstream>
 #include <cassert>
+#include <regex>
 
 #include "ReputationDynamics.hpp"
 #include "Game.hpp"
@@ -47,6 +48,103 @@ class HistoNormalBin {
 };
 
 
+// return unmatched pattern
+std::string Match(const Game& g, const std::vector<std::string>& patterns) {
+  const auto c2r = [](char c)->Reputation {
+    if (c == 'B') { return Reputation::B; }
+    else if (c == 'N') { return Reputation::N; }
+    else if (c == 'G') { return Reputation::G; }
+    else { throw std::runtime_error("unknown reputation"); }
+  };
+  const auto c2a = [](char c)->Action {
+    if (c == 'c') { return Action::C; }
+    else if (c == 'd') { return Action::D; }
+    else { throw std::runtime_error("unknown action"); }
+  };
+  // examples:
+  // GG:cG
+  // GGd:B
+  // GG:c*
+  // GB:*B
+  // GB:*[NG]
+  // BGd:[BN]
+  const std::regex re1(R"([BNG][BNG]:[cd][BNG])");
+  const std::regex re2(R"([BNG][BNG][cd]:[BNG])");
+  const std::regex re3(R"([BNG][BNG]:[cd]\*)");
+  const std::regex re4(R"([BNG][BNG]:\*[BNG])");
+  const std::regex re5(R"([BNG][BNG]:\*\[([BNG]+)\])");
+  const std::regex re6(R"([BNG][BNG]:[cd]\[([BNG]+)\])");
+  const std::regex re7(R"([BNG][BNG][cd]:\[([BNG]+)\])");
+  for (const std::string& s: patterns) {
+    std::smatch m;
+    if (std::regex_match(s, re1)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]), Z = c2r(s[4]);
+      Action a = c2a(s[3]);
+      if (g.At(X, Y) != std::make_pair(a, Z) ) { return s; }
+    }
+    else if (std::regex_match(s, re2)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]), Z = c2r(s[4]);
+      Action a = c2a(s[2]);
+      if (g.rep_dynamics.RepAt(X, Y, a) != Z) { return s; }
+    }
+    else if (std::regex_match(s, re3)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]);
+      Action a = c2a(s[3]);
+      if (g.resident_ar.ActAt(X, Y) != a) { return s; }
+    }
+    else if (std::regex_match(s, re4)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]), Z = c2r(s[4]);
+      if (g.At(X, Y).second != Z) { return s; }
+    }
+    else if (std::regex_match(s, m, re5)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]);
+      auto p = g.At(X, Y);
+      std::ssub_match sub = m[1];
+      assert(sub.matched);
+      bool ok = false;
+      for (char c: sub.str()) {
+        Reputation Z = c2r(c);
+        if (p.second == Z) { ok = true; break; }
+      }
+      if (!ok) { return s; }
+    }
+    else if (std::regex_match(s, m, re6)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]);
+      auto p = g.At(X, Y);
+      if (p.first != c2a(s[3])) { return s; }
+      std::ssub_match sub = m[1];
+      assert(sub.matched);
+      bool ok = false;
+      for (char c: sub.str()) {
+        Reputation Z = c2r(c);
+        if (g.At(X,Y).second == Z) { ok = true; break; }
+      }
+      if (!ok) { return s; }
+    }
+    else if (std::regex_match(s, m, re7)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]);
+      Action a = c2a(s[2]);
+      Reputation Z = g.rep_dynamics.RepAt(X, Y, a);
+
+      std::ssub_match sub = m[1];
+      assert(sub.matched);
+      bool ok = false;
+      for (char c: sub.str()) {
+        Reputation P = c2r(c);
+        if (Z == P) { ok = true; break; }
+      }
+      if (!ok) { return s; }
+    }
+    else {
+      std::cerr << s << std::endl;
+      throw std::runtime_error("invalid pattern");
+    }
+
+  }
+  return std::string();
+}
+
+
 int ClassifyType(Game& g) {
   const ReputationDynamics rd = g.rep_dynamics;
   const ActionRule ar = g.resident_ar;
@@ -59,18 +157,20 @@ int ClassifyType(Game& g) {
     throw std::runtime_error("must not happen");
   }
 
-  auto GorN = [](Reputation x)->bool { return (x == G || x == N); };
-  auto ap = [&g](Reputation donor, Reputation recip, Action a, Reputation r)->bool { // assert prescription
-    return g.At(donor, recip) == std::make_pair(a, r);
-  };
-  // N population is negligible
+  // N population is negligible when
   //  (NG => !N or NN => !N) and (NG => N or GN => !N)
   //  = (NG => !N and GN => !N) or (NG => N and NN => !N) or (NN => !N and GN => !N)
-  auto N_is_minor = [&g,G,N,B]()->bool {
+  bool N_is_minor = false;
+  {
+    Reputation gg = g.At(G, G).second;
+    int num = 0;
     Reputation ng = g.At(N, G).second;
     Reputation gn = g.At(G, N).second;
     Reputation nn = g.At(N, N).second;
-    return (ng != N && gn != N) || (nn != N || gn != N) || (ng != N && nn != N);
+    if (ng == N) num++;
+    if (gn == N) num++;
+    if (nn == N) num++;
+    N_is_minor = (gg == G && num < 2);
   };
 
   std::set<int> types;
@@ -84,12 +184,8 @@ int ClassifyType(Game& g) {
   // ---
   // N population is minor
   if (
-    ap(G, G, C, G)
-    && rd.RepAt(G, G, D) == B
-    && ap(G, B, D, G)
-    && ap(B, G, C, G)
-    && rd.RepAt(B, G, D) != G
-    && N_is_minor()
+    Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cG", "BGd:[BN]"}).empty()
+    && N_is_minor
     ) {
     types.insert(1);
   }
@@ -103,13 +199,26 @@ int ClassifyType(Game& g) {
   // ---
   // N population is minor
   if (
-    ap(G, G, C, G)
-    && rd.RepAt(G, G, D) == B
-    && ap(G, B, D, G)
-    && g.At(B, G).second == N
-    && g.At(N, G).second == G
-    && (ar.ActAt(B, G) == C || ar.ActAt(N, G) == C)
-    && N_is_minor()
+    Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cN", "NG:cG"}).empty()
+    && N_is_minor
+    ) {
+    types.insert(2);
+  }
+  if (
+    Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cN", "NG:cN", "NN:*G"}).empty()
+    && N_is_minor
+    ) {
+    types.insert(2);
+  }
+  if (
+    Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cN", "NG:dG"}).empty()
+    && N_is_minor
+    ) {
+    types.insert(2);
+  }
+  if (
+    Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:dN", "NG:cG"}).empty()
+    && N_is_minor
     ) {
     types.insert(2);
   }
@@ -120,12 +229,14 @@ int ClassifyType(Game& g) {
   // ---
   // N population is minor
   if (
-    ap(G, G, C, G)
-    && rd.RepAt(G, G, D) == B
-    && ap(G, B, D, N)
-    && ap(B, G, C, G)
-    && g.At(N, G).second == G
-    && N_is_minor()
+    Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cG", "NG:*G"}).empty()
+    && N_is_minor
+    ) {
+    types.insert(3);
+  }
+  if (
+    Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cG", "NN:*G"}).empty()
+    && N_is_minor
     ) {
     types.insert(3);
   }
@@ -137,12 +248,14 @@ int ClassifyType(Game& g) {
   // ---
   // N population is minor
   if (
-    ap(G, G, C, G)
-    && rd.RepAt(G, G, D) == B
-    && ap(G, B, D, N)
-    && ap(B, G, C, N)
-    && g.At(N, G).second == G
-    && N_is_minor()
+    Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cN", "NG:*G"}).empty()
+    && N_is_minor
+    ) {
+    types.insert(4);
+  }
+  if (
+    Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cN", "NG:cN", "NN:*G"}).empty()
+    && N_is_minor
     ) {
     types.insert(4);
   }
@@ -156,88 +269,41 @@ int ClassifyType(Game& g) {
   // BGc => [GN], BNc => [GN]
   // BG => c, BN => c
   // BGd => B, BNd => B
+  // ---
+  // N is not minor
   if (
-    GorN(rd.RepAt(G, G, C))
-    && GorN(rd.RepAt(G, N, C))
-    && GorN(rd.RepAt(N, G, C))
-    && GorN(rd.RepAt(N, N, C))
-    // ---
-    && ar.ActAt(G, G) == C
-    && ar.ActAt(G, N) == C
-    && ar.ActAt(N, G) == C
-    && ar.ActAt(N, N) == C
-    // ---
-    && rd.RepAt(G, G, D) == B
-    && rd.RepAt(G, N, D) == B
-    && rd.RepAt(N, G, D) == B
-    && rd.RepAt(N, N, D) == B
-    // ---
-    && ar.ActAt(G, B) == D
-    && ar.ActAt(N, B) == D
-    // ---------------
-    && GorN(rd.RepAt(G, B, D))
-    && GorN(rd.RepAt(N, B, D))
-    // ---
-    && GorN(rd.RepAt(B, G, C))
-    && GorN(rd.RepAt(B, N, C))
-    // ---
-    && ar.ActAt(B, G) == C
-    && ar.ActAt(B, N) == C
-    // ---
-    && rd.RepAt(B, G, D) == B
-    && rd.RepAt(B, N, D) == B
+    Match(g, {
+      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
+      "GGd:B", "GNd:B", "NGd:B", "NNd:B",
+      "GB:d[GN]", "NB:d[GN]",
+      "BG:c[GN]", "BN:c[GN]",
+      "BGd:B", "BNd:B"
+      }).empty()
+    && !N_is_minor
     ) {
     types.insert(5);
   }
-  // type-6: G and N works as G for the leading eight, but punishment by either N or G player is not justified
+  // type-6: G and N works as G for the leading eight, but punishment by N is not justified
   // GGc => [GN], GNc => [GN], NGc => [GN], NNc => [GN]
   // GG => c, GN => c, NG => c, NN => c
   // GGd => B, GNd => B, NGd => B, NNd => B
   // GB => d, NB => d
   // ---
-  // (GBd => [GN] and NBd => B) || (NBd => [GN] and GBd => B)  // only difference from type 5
+  // GB => d[GN] and NBd => B  // only difference from type 5
   // BGc => [GN], BNc => [GN]
   // BG => c, BN => c
   // BGd => B, BNd => B
   if (
-    GorN(rd.RepAt(G, G, C))
-    && GorN(rd.RepAt(G, N, C))
-    && GorN(rd.RepAt(N, G, C))
-    && GorN(rd.RepAt(N, N, C))
-    // ---
-    && ar.ActAt(G, G) == C
-    && ar.ActAt(G, N) == C
-    && ar.ActAt(N, G) == C
-    && ar.ActAt(N, N) == C
-    // ---
-    && rd.RepAt(G, G, D) == B
-    && rd.RepAt(G, N, D) == B
-    && rd.RepAt(N, G, D) == B
-    && rd.RepAt(N, N, D) == B
-    // ---
-    && ar.ActAt(G, B) == D
-    && ar.ActAt(N, B) == D
-    // ---------------
-    && (
-      (
-        GorN(rd.RepAt(G, B, D))
-        && rd.RepAt(N, B, D) == B
-      )
-      ||
-      (
-        GorN(rd.RepAt(N, B, D))
-        && rd.RepAt(G, B, D) == B
-      )
+    (
+      Match(g, {
+        "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
+        "GGd:B", "GNd:B", "NGd:B", "NNd:B",
+        "GB:d[GN]", "NBd:B",
+        "BG:c[GN]", "BN:c[GN]",
+        "BGd:B", "BNd:B"
+      }).empty()
     )
-    // ---
-    && GorN(rd.RepAt(B, G, C))
-    && GorN(rd.RepAt(B, N, C))
-    // ---
-    && ar.ActAt(B, G) == C
-    && ar.ActAt(B, N) == C
-    // ---
-    && rd.RepAt(B, G, D) == B
-    && rd.RepAt(B, N, D) == B
+    && !N_is_minor
     ) {
     types.insert(6);
   }
@@ -252,42 +318,24 @@ int ClassifyType(Game& g) {
   // (BG => c and BGc => [GN] and BN => d) or (BN => c and BNc => [GN] and BG => d)
   // BGd => B, BNd => B
   if (
-    GorN(rd.RepAt(G, G, C))
-    && GorN(rd.RepAt(G, N, C))
-    && GorN(rd.RepAt(N, G, C))
-    && GorN(rd.RepAt(N, N, C))
-    // ---
-    && ar.ActAt(G, G) == C
-    && ar.ActAt(G, N) == C
-    && ar.ActAt(N, G) == C
-    && ar.ActAt(N, N) == C
-    // ---
-    && rd.RepAt(G, G, D) == B
-    && rd.RepAt(G, N, D) == B
-    && rd.RepAt(N, G, D) == B
-    && rd.RepAt(N, N, D) == B
-    // ---
-    && ar.ActAt(G, B) == D
-    && ar.ActAt(N, B) == D
-    // ---------------
-    && GorN(rd.RepAt(G, B, D))
-    // ---
-    && (
-      (
-        ar.ActAt(B, G) == C
-        && GorN(rd.RepAt(B, G, C))
-        && ar.ActAt(B, N) == D
-      )
+    (
+      Match(g, {
+        "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
+        "GGd:B", "GNd:B", "NGd:B", "NNd:B",
+        "GB:d[GN]",
+        "BG:c[GN]", "BN:d*",
+        "BGd:B", "BNd:B"
+      }).empty()
       ||
-      (
-        ar.ActAt(B, N) == C
-        && GorN(rd.RepAt(B, N, C))
-        && ar.ActAt(B, G) == D
-      )
+      Match(g, {
+        "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
+        "GGd:B", "GNd:B", "NGd:B", "NNd:B",
+        "GB:d[GN]",
+        "BN:c[GN]", "BG:d*",
+        "BGd:B", "BNd:B"
+      }).empty()
     )
-    // ---
-    && rd.RepAt(B, G, D) == B
-    && rd.RepAt(B, N, D) == B
+    && !N_is_minor
     ) {
     types.insert(7);
   }
@@ -302,34 +350,14 @@ int ClassifyType(Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   if (
-    GorN(rd.RepAt(G, G, C))
-    && GorN(rd.RepAt(G, N, C))
-    && GorN(rd.RepAt(N, G, C))
-    && GorN(rd.RepAt(N, N, D))
-    // ---
-    && ar.ActAt(G, G) == C
-    && ar.ActAt(G, N) == C
-    && ar.ActAt(N, G) == C
-    && ar.ActAt(N, N) == D
-    // ---
-    && rd.RepAt(G, G, D) == B
-    && rd.RepAt(G, N, D) == B
-    && rd.RepAt(N, G, D) == B
-    // ---
-    && ar.ActAt(G, B) == D
-    && ar.ActAt(N, B) == D
-    // ---------------
-    && GorN(rd.RepAt(G, B, D))
-    && GorN(rd.RepAt(N, B, D))
-    // ---
-    && GorN(rd.RepAt(B, G, C))
-    && GorN(rd.RepAt(B, N, C))
-    // ---
-    && ar.ActAt(B, G) == C
-    && ar.ActAt(B, N) == C
-    // ---
-    && rd.RepAt(B, G, D) == B
-    && rd.RepAt(B, N, D) == B
+    Match(g, {
+      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
+      "GGd:B", "GNd:B", "NGd:B",
+      "GB:d[GN]", "NB:d[GN]",
+      "BG:c[GN]", "BN:c[GN]",
+      "BGd:B", "BNd:B"
+    }).empty()
+    && !N_is_minor
     ) {
     types.insert(8);
   }
@@ -345,32 +373,14 @@ int ClassifyType(Game& g) {
   // BG => c, *BN => d*
   // BGd => B
   if (
-    GorN(rd.RepAt(G, G, C))
-    && GorN(rd.RepAt(G, N, C))
-    && GorN(rd.RepAt(N, G, C))
-    && GorN(rd.RepAt(N, N, D))
-    // ---
-    && ar.ActAt(G, G) == C
-    && ar.ActAt(G, N) == C
-    && ar.ActAt(N, G) == C
-    && ar.ActAt(N, N) == D
-    // ---
-    && rd.RepAt(G, G, D) == B
-    && rd.RepAt(G, N, D) == B
-    && rd.RepAt(N, G, D) == B
-    // ---
-    && ar.ActAt(G, B) == D
-    && ar.ActAt(N, B) == D
-    // ---------------
-    && GorN(rd.RepAt(G, B, D))
-    && GorN(rd.RepAt(N, B, D))
-    // ---
-    && GorN(rd.RepAt(B, G, C))
-    // ---
-    && ar.ActAt(B, G) == C
-    && ar.ActAt(B, N) == D
-    // ---
-    && rd.RepAt(B, G, D) == B
+    Match(g, {
+      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
+      "GGd:B", "GNd:B", "NGd:B",
+      "GB:d[GN]", "NB:d[GN]",
+      "BG:c[GN]", "BN:d*",
+      "BGd:B"
+    }).empty()
+    && !N_is_minor
     ) {
     types.insert(9);
   }
@@ -385,34 +395,14 @@ int ClassifyType(Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   if (
-    GorN(rd.RepAt(G, G, C))
-    && GorN(rd.RepAt(G, N, C))
-    && GorN(rd.RepAt(N, G, C))
-    && GorN(rd.RepAt(N, N, D))
-    // ---
-    && ar.ActAt(G, G) == C
-    && ar.ActAt(G, N) == C
-    && ar.ActAt(N, G) == C
-    && ar.ActAt(N, N) == D
-    // ---
-    && rd.RepAt(G, G, D) == B
-    && rd.RepAt(G, N, D) == B
-    && rd.RepAt(N, G, D) == B
-    // ---
-    && ar.ActAt(G, B) == D
-    && ar.ActAt(N, B) == D
-    // ---------------
-    && GorN(rd.RepAt(G, B, D))
-    && rd.RepAt(N, B, D) == B
-    // ---
-    && GorN(rd.RepAt(B, G, C))
-    && GorN(rd.RepAt(B, N, C))
-    // ---
-    && ar.ActAt(B, G) == C
-    && ar.ActAt(B, N) == C
-    // ---
-    && rd.RepAt(B, G, D) == B
-    && rd.RepAt(B, N, D) == B
+    Match(g, {
+      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
+      "GGd:B", "GNd:B", "NGd:B",
+      "GB:d[GN]", "NB:dB",
+      "BG:c[GN]", "BN:c[GN]",
+      "BGd:B", "BNd:B"
+    }).empty()
+    && !N_is_minor
     ) {
     types.insert(10);
   }
@@ -428,32 +418,14 @@ int ClassifyType(Game& g) {
   // BG => c, BN => c
   // BGd => B
   if (
-    GorN(rd.RepAt(G, G, C))
-    && GorN(rd.RepAt(G, N, C))
-    && GorN(rd.RepAt(N, G, C))
-    && GorN(rd.RepAt(N, N, D))
-    // ---
-    && ar.ActAt(G, G) == C
-    && ar.ActAt(G, N) == C
-    && ar.ActAt(N, G) == C
-    && ar.ActAt(N, N) == D
-    // ---
-    && rd.RepAt(G, G, D) == B
-    && rd.RepAt(G, N, D) == B
-    && rd.RepAt(N, G, D) == B
-    // ---
-    && ar.ActAt(G, B) == D
-    && ar.ActAt(N, B) == D
-    // ---------------
-    && GorN(rd.RepAt(G, B, D))
-    && rd.RepAt(N, B, D) == B
-    // ---
-    && GorN(rd.RepAt(B, G, C))
-    // ---
-    && ar.ActAt(B, G) == C
-    && ar.ActAt(B, N) == D
-    // ---
-    && rd.RepAt(B, G, D) == B
+    Match(g, {
+      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
+      "GGd:B", "GNd:B", "NGd:B",
+      "GB:d[GN]", "NB:dB",
+      "BG:c[GN]", "BN:d*",
+      "BGd:B"
+    }).empty()
+    && !N_is_minor
     ) {
     types.insert(11);
   }
@@ -471,35 +443,14 @@ int ClassifyType(Game& g) {
   // BG => c, BN => c
   // BGd => B, BNd => B
   if (
-    GorN(rd.RepAt(G, G, C))
-    && GorN(rd.RepAt(G, N, C))
-    && GorN(rd.RepAt(N, G, C))
-    && GorN(rd.RepAt(N, N, C))
-    // ---
-    && ar.ActAt(G, G) == C
-    && ar.ActAt(G, N) == C
-    && ar.ActAt(N, G) == C
-    && ar.ActAt(N, N) == C
-    // ---
-    && rd.RepAt(G, G, D) == B
-    && rd.RepAt(G, N, D) == B
-    && (rd.RepAt(N, G, D) == G || rd.RepAt(N, G, D) == B)
-    && (rd.RepAt(N, N, D) == G || rd.RepAt(N, N, D) == B)
-    // ---
-    && ar.ActAt(G, B) == D
-    && ar.ActAt(N, B) == D
-    // ---------------
-    && GorN(rd.RepAt(N, B, D))
-    && rd.RepAt(G, B, D) == B
-    // ---
-    && GorN(rd.RepAt(B, G, C))
-    && GorN(rd.RepAt(B, N, C))
-    // ---
-    && ar.ActAt(B, G) == C
-    && ar.ActAt(B, N) == C
-    // ---
-    && rd.RepAt(B, G, D) == B
-    && rd.RepAt(B, N, D) == B
+    Match(g, {
+      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
+      "GGd:B", "GNd:B", "NGd:[GB]", "NNd:[GB]",
+      "GB:dB", "NB:d[GN]",
+      "BG:c[GN]", "BN:c[GN]",
+      "BGd:B", "BNd:B"
+    }).empty()
+    && !N_is_minor
     ) {
     types.insert(12);
   }
@@ -515,34 +466,14 @@ int ClassifyType(Game& g) {
   // BG => c, BN => d
   // BGd => B
   if (
-    GorN(rd.RepAt(G, G, C))
-    && GorN(rd.RepAt(G, N, C))
-    && GorN(rd.RepAt(N, G, C))
-    && GorN(rd.RepAt(N, N, C))
-    // ---
-    && ar.ActAt(G, G) == C
-    && ar.ActAt(G, N) == C
-    && ar.ActAt(N, G) == C
-    && ar.ActAt(N, N) == C
-    // ---
-    && rd.RepAt(G, G, D) == B
-    && rd.RepAt(G, N, D) == B
-    && rd.RepAt(N, G, D) == B
-    && rd.RepAt(N, N, D) == B
-    // ---
-    && ar.ActAt(G, B) == D
-    && ar.ActAt(N, B) == D
-    // ---------------
-    && GorN(rd.RepAt(G, B, D))
-    && GorN(rd.RepAt(N, B, D))
-    // ---
-    && GorN(rd.RepAt(B, G, C))
-    && GorN(rd.RepAt(B, N, D))
-    // ---
-    && ar.ActAt(B, G) == C
-    && ar.ActAt(B, N) == D
-    // ---
-    && rd.RepAt(B, G, D) == B
+    Match(g, {
+      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
+      "GGd:B", "GNd:B", "NGd:B", "NNd:B",
+      "GB:d[GN]", "NB:d[GN]",
+      "BG:c[GN]", "BN:d[GN]",
+      "BGd:B"
+    }).empty()
+    && !N_is_minor
     ) {
     types.insert(13);
     // return 13;
@@ -550,7 +481,6 @@ int ClassifyType(Game& g) {
 
   int t = 0;
   if (types.size() > 0) {
-    /*
     if (types.size() > 1) {
       for (int t: types) {
         std::cerr << t << ' ';
@@ -559,7 +489,6 @@ int ClassifyType(Game& g) {
       std::cerr << g.Inspect();
       throw std::runtime_error("duplicate types");
     }
-     */
     t = *types.begin();
   }
   else {
@@ -627,7 +556,7 @@ void PrintHistogramActionRules(const std::vector<uint64_t> game_ids) {
   }
 }
 
-void PrintHHisto(const std::vector<HistoNormalBin>& h_histo) {
+void PrintHHisto(const std::array<HistoNormalBin,3>& h_histo) {
   assert( h_histo.size() == 3 );
   std::cout << h_histo.size() << ' ' << h_histo[0].bin << std::endl;
   std::cout << "H_B histo:" << std::endl;
@@ -663,9 +592,15 @@ int main(int argc, char* argv[]) {
 
   const size_t N_TYPES = 14;
   const double bin = 0.05;
-  using h_histo_t = std::vector<HistoNormalBin>;
-  std::vector<std::vector<uint64_t >> game_ids(N_TYPES);
-  std::vector<h_histo_t> h_histo(N_TYPES, h_histo_t(3, bin));
+  using histo3_t = std::array<HistoNormalBin,3>;
+  std::map<int, std::vector<uint64_t >> game_ids;
+  std::map<int, histo3_t> h_histo;
+  auto get_or_insert_h_histo = [&h_histo,bin](int i)->histo3_t& {
+    if (h_histo.find(i) == h_histo.end()) {
+      h_histo.insert( std::make_pair(i, histo3_t({bin, bin, bin}) ));
+    }
+    return h_histo.at(i);
+  };
 
   while(fin) {
     uint64_t org_gid,gid;
@@ -674,18 +609,18 @@ int main(int argc, char* argv[]) {
     if (fin) {
       Game g(0.02, 0.02, gid, c_prob, {h0,h1,h2} );
       int i = ClassifyType(g);
-      game_ids.at(i).push_back(gid);
-      h_histo.at(i).at(0).Add(h0);
-      h_histo.at(i).at(1).Add(h1);
-      h_histo.at(i).at(2).Add(h2);
+      game_ids[i].push_back(gid);
+      get_or_insert_h_histo(i).at(0).Add(h0);
+      get_or_insert_h_histo(i).at(1).Add(h1);
+      get_or_insert_h_histo(i).at(2).Add(h2);
     }
   }
 
-  for (size_t i = 0; i < game_ids.size(); i++) {
-    std::cerr << "type: " << i << ", " << game_ids.at(i).size() << std::endl;
+  for (auto kv: game_ids) {
+    std::cerr << "type: " << kv.first << ", " << kv.second.size() << std::endl;
   }
 
-  if (game_ids[0].size() > 0) {
+  if (game_ids.find(0) != game_ids.end()) {
     std::ofstream fout("non_L8.txt");
     for (auto gid: game_ids.at(0)) {
       fout << gid << std::endl;
@@ -693,11 +628,11 @@ int main(int argc, char* argv[]) {
     fout.close();
   }
 
-  for (size_t i = 1; i < N_TYPES; i++) {
-    std::cout << "=================== TYPE " << i << "====================" << std::endl;
-    PrintHistogramRepDynamics(game_ids.at(i));
-    PrintHistogramActionRules(game_ids.at(i));
-    PrintHHisto(h_histo.at(i));
+  for (auto kv: game_ids) {
+    std::cout << "=================== TYPE " << kv.first << "====================" << std::endl;
+    PrintHistogramRepDynamics(kv.second);
+    PrintHistogramActionRules(kv.second);
+    PrintHHisto(h_histo.at(kv.first));
   }
 
   return 0;
