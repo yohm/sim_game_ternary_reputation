@@ -62,56 +62,32 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
     else { throw std::runtime_error("unknown action"); }
   };
   // examples:
-  // GG:cG
+  // GG:cG, GG:c*, GB:*B
   // GGd:B
-  // GG:c*
-  // GB:*B
-  // GB:*[NG]
+  // GB:c[NG], GB:*[NG]
   // BGd:[BN]
-  const std::regex re1(R"([BNG][BNG]:[cd][BNG])");
+  const std::regex re1(R"([BNG][BNG]:[cd\*][BNG\*])");
   const std::regex re2(R"([BNG][BNG][cd]:[BNG])");
-  const std::regex re3(R"([BNG][BNG]:[cd]\*)");
-  const std::regex re4(R"([BNG][BNG]:\*[BNG])");
-  const std::regex re5(R"([BNG][BNG]:\*\[([BNG]+)\])");
-  const std::regex re6(R"([BNG][BNG]:[cd]\[([BNG]+)\])");
-  const std::regex re7(R"([BNG][BNG][cd]:\[([BNG]+)\])");
+  const std::regex re3(R"([BNG][BNG]:[cd\*]\[([BNG]+)\])");
+  const std::regex re4(R"([BNG][BNG][cd]:\[([BNG]+)\])");
   for (const std::string& s: patterns) {
     std::smatch m;
     if (std::regex_match(s, re1)) {
-      Reputation X = c2r(s[0]), Y = c2r(s[1]), Z = c2r(s[4]);
-      Action a = c2a(s[3]);
-      if (g.At(X, Y) != std::make_pair(a, Z) ) { return s; }
+      Reputation X = c2r(s[0]), Y = c2r(s[1]);
+      auto presc = g.At(X, Y);
+      Action a = (s[3] == '*') ? presc.first : c2a(s[3]);
+      Reputation  Z = (s[4] == '*') ? presc.second : c2r(s[4]);
+      if ( presc != std::make_pair(a, Z) ) { return s; }
     }
     else if (std::regex_match(s, re2)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]), Z = c2r(s[4]);
       Action a = c2a(s[2]);
       if (g.rep_dynamics.RepAt(X, Y, a) != Z) { return s; }
     }
-    else if (std::regex_match(s, re3)) {
-      Reputation X = c2r(s[0]), Y = c2r(s[1]);
-      Action a = c2a(s[3]);
-      if (g.resident_ar.ActAt(X, Y) != a) { return s; }
-    }
-    else if (std::regex_match(s, re4)) {
-      Reputation X = c2r(s[0]), Y = c2r(s[1]), Z = c2r(s[4]);
-      if (g.At(X, Y).second != Z) { return s; }
-    }
-    else if (std::regex_match(s, m, re5)) {
+    else if (std::regex_match(s, m, re3)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       auto p = g.At(X, Y);
-      std::ssub_match sub = m[1];
-      assert(sub.matched);
-      bool ok = false;
-      for (char c: sub.str()) {
-        Reputation Z = c2r(c);
-        if (p.second == Z) { ok = true; break; }
-      }
-      if (!ok) { return s; }
-    }
-    else if (std::regex_match(s, m, re6)) {
-      Reputation X = c2r(s[0]), Y = c2r(s[1]);
-      auto p = g.At(X, Y);
-      if (p.first != c2a(s[3])) { return s; }
+      if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
       std::ssub_match sub = m[1];
       assert(sub.matched);
       bool ok = false;
@@ -121,7 +97,7 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
       }
       if (!ok) { return s; }
     }
-    else if (std::regex_match(s, m, re7)) {
+    else if (std::regex_match(s, m, re4)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       Action a = c2a(s[2]);
       Reputation Z = g.rep_dynamics.RepAt(X, Y, a);
