@@ -61,23 +61,34 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
     else if (c == 'd') { return Action::D; }
     else { throw std::runtime_error("unknown action"); }
   };
+  const auto IsIn = [&c2r](Reputation rep, const std::string& set_str)->bool {
+    for (char c: set_str) {
+      if (rep == c2r(c)) { return true; }
+    }
+    return false;
+  };
   // examples:
-  // GG:cG, GG:c*, GB:*B
-  // GGd:B
-  // GB:c[NG], GB:*[NG]
-  // BGd:[BN]
+  // 1. GG:cG, GG:c*, GB:*B
+  // 2. GGd:B
+  // 3. GB:c[NG], GB:*[NG]
+  // 4. BGd:[BN]
+  // 5. GG:cG:B, GG:c*:B, GG:*G:B, GG:**:B
+  // 6. GG:cG:[NG]
+  // 7. GG:c[BN]:[NG]
   const std::regex re1(R"([BNG][BNG]:[cd\*][BNG\*])");
   const std::regex re2(R"([BNG][BNG][cd]:[BNG])");
   const std::regex re3(R"([BNG][BNG]:[cd\*]\[([BNG]+)\])");
   const std::regex re4(R"([BNG][BNG][cd]:\[([BNG]+)\])");
+  const std::regex re5(R"([BNG][BNG]:[cd\*][BNG\*]:[BNG])");
+  const std::regex re6(R"([BNG][BNG]:[cd\*][BNG\*]:\[([BNG]+)\])");
+  const std::regex re7(R"([BNG][BNG]:[cd\*]\[([BNG]+)\]:\[([BNG]+)\])");
   for (const std::string& s: patterns) {
     std::smatch m;
     if (std::regex_match(s, re1)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
-      auto presc = g.At(X, Y);
-      Action a = (s[3] == '*') ? presc.first : c2a(s[3]);
-      Reputation  Z = (s[4] == '*') ? presc.second : c2r(s[4]);
-      if ( presc != std::make_pair(a, Z) ) { return s; }
+      auto p = g.At(X, Y);
+      if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
+      if (s[4] != '*' && p.second != c2r(s[4])) { return s; }
     }
     else if (std::regex_match(s, re2)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]), Z = c2r(s[4]);
@@ -88,28 +99,40 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       auto p = g.At(X, Y);
       if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
-      std::ssub_match sub = m[1];
-      assert(sub.matched);
-      bool ok = false;
-      for (char c: sub.str()) {
-        Reputation Z = c2r(c);
-        if (g.At(X,Y).second == Z) { ok = true; break; }
-      }
-      if (!ok) { return s; }
+      if (!IsIn(p.second, m[1].str()) ) { return s; }
     }
     else if (std::regex_match(s, m, re4)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       Action a = c2a(s[2]);
       Reputation Z = g.rep_dynamics.RepAt(X, Y, a);
+      if ( !IsIn(Z, m[1].str()) ) { return s; }
+    }
+    else if (std::regex_match(s, re5)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]);
+      auto p = g.At(X, Y);
+      if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
+      if (s[4] != '*' && p.second != c2r(s[4])) { return s; }
+      Action a_not = (p.first == Action::C) ? Action::D : Action::C;
+      if (g.rep_dynamics.RepAt(X,Y,a_not) != c2r(s[6])) { return s; }
+    }
+    else if (std::regex_match(s, m, re6)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]);
+      auto p = g.At(X, Y);
+      if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
+      if (s[4] != '*' && p.second != c2r(s[4])) { return s; }
+      Action a_not = (p.first == Action::C) ? Action::D : Action::C;
+      Reputation Z_not = g.rep_dynamics.RepAt(X,Y,a_not);
+      if ( !IsIn(Z_not, m[1].str()) ) { return s; }
+    }
+    else if (std::regex_match(s, m, re7)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]);
+      auto p = g.At(X, Y);
+      if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
+      if (!IsIn(p.second, m[1].str())) { return s; }
 
-      std::ssub_match sub = m[1];
-      assert(sub.matched);
-      bool ok = false;
-      for (char c: sub.str()) {
-        Reputation P = c2r(c);
-        if (Z == P) { ok = true; break; }
-      }
-      if (!ok) { return s; }
+      Action a_not = (p.first == Action::C) ? Action::D : Action::C;
+      Reputation Z_not = g.rep_dynamics.RepAt(X,Y,a_not);
+      if (!IsIn(Z_not, m[2].str())) { return s; }
     }
     else {
       std::cerr << s << std::endl;
