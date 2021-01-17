@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
     assert( g.IsESS(2.0, 1.0) == false );
 
-    assert( g.At(Reputation::G, Reputation::B) == std::make_pair(Action::D, Reputation::N));
+    assert( g.At(Reputation::G, Reputation::B) == std::make_tuple(Action::D, Reputation::N, Reputation::G));
 
     auto rep_act = g.TraceReputationAndAction(Reputation::B, Reputation::G);
     assert( rep_act.first[0] == Reputation::B );

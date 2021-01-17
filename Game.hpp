@@ -27,14 +27,13 @@ class Game {
     auto h = ResidentEqReputation();
     ss << "GameID: " << ID() << std::endl
        << "(mu_e, mu_a): (" << mu_e << ", " << mu_a << ")" << std::endl
-       << "--- " << rep_dynamics.Inspect()
-       << "--- " << resident_ar.Inspect()
+       << "(RD_id, AR_id): (" << rep_dynamics.ID() << ", " << resident_ar.ID() << ")" << std::endl
        << "--- Transition of residents" << std::endl;
     for (int i = 0; i < 9; i++) {
       Reputation X = static_cast<Reputation>(i/3);
       Reputation Y = static_cast<Reputation>(i%3);
-      auto ar = At(X, Y);
-      ss << "(" << X << "->" << Y << "): " << ar.first << ar.second;
+      auto p = At(X, Y);
+      ss << "(" << X << "->" << Y << "): " << std::get<0>(p) << std::get<1>(p) << ':' << std::get<2>(p);
       ss << ((i % 3 == 2) ? "\n" : "\t");
     }
     ss << "(c_porb,h0,h1,h2): " << ResidentCoopProb() << ' ' << h[0] << ' ' << h[1] << ' ' << h[2] << std::endl;
@@ -48,10 +47,12 @@ class Game {
   const double mu_e, mu_a;
   const ReputationDynamics rep_dynamics;
   const ActionRule resident_ar;
-  std::pair<Action,Reputation> At(Reputation donor, Reputation recipient) const {
+  std::tuple<Action,Reputation,Reputation> At(Reputation donor, Reputation recipient) const {
     Action a = resident_ar.ActAt(donor, recipient);
     Reputation r = rep_dynamics.RepAt(donor, recipient, a);
-    return std::make_pair(a, r);
+    Action a_not = (a == Action::C) ? Action::D : Action::C;
+    Reputation r_not = rep_dynamics.RepAt(donor, recipient, a_not);
+    return std::make_tuple(a, r, r_not);
   }
   bool IsESS(double benefit, double cost) {
     CalcHStarResident();

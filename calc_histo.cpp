@@ -87,8 +87,8 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
     if (std::regex_match(s, re1)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       auto p = g.At(X, Y);
-      if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
-      if (s[4] != '*' && p.second != c2r(s[4])) { return s; }
+      if (s[3] != '*' && std::get<0>(p) != c2a(s[3])) { return s; }
+      if (s[4] != '*' && std::get<1>(p) != c2r(s[4])) { return s; }
     }
     else if (std::regex_match(s, re2)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]), Z = c2r(s[4]);
@@ -98,8 +98,8 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
     else if (std::regex_match(s, m, re3)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       auto p = g.At(X, Y);
-      if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
-      if (!IsIn(p.second, m[1].str()) ) { return s; }
+      if (s[3] != '*' && std::get<0>(p) != c2a(s[3])) { return s; }
+      if (!IsIn( std::get<1>(p), m[1].str()) ) { return s; }
     }
     else if (std::regex_match(s, m, re4)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
@@ -110,27 +110,27 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
     else if (std::regex_match(s, re5)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       auto p = g.At(X, Y);
-      if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
-      if (s[4] != '*' && p.second != c2r(s[4])) { return s; }
-      Action a_not = (p.first == Action::C) ? Action::D : Action::C;
+      if (s[3] != '*' && std::get<0>(p) != c2a(s[3])) { return s; }
+      if (s[4] != '*' && std::get<1>(p) != c2r(s[4])) { return s; }
+      Action a_not = (std::get<0>(p) == Action::C) ? Action::D : Action::C;
       if (g.rep_dynamics.RepAt(X,Y,a_not) != c2r(s[6])) { return s; }
     }
     else if (std::regex_match(s, m, re6)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       auto p = g.At(X, Y);
-      if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
-      if (s[4] != '*' && p.second != c2r(s[4])) { return s; }
-      Action a_not = (p.first == Action::C) ? Action::D : Action::C;
+      if (s[3] != '*' && std::get<0>(p) != c2a(s[3])) { return s; }
+      if (s[4] != '*' && std::get<1>(p) != c2r(s[4])) { return s; }
+      Action a_not = (std::get<0>(p) == Action::C) ? Action::D : Action::C;
       Reputation Z_not = g.rep_dynamics.RepAt(X,Y,a_not);
       if ( !IsIn(Z_not, m[1].str()) ) { return s; }
     }
     else if (std::regex_match(s, m, re7)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       auto p = g.At(X, Y);
-      if (s[3] != '*' && p.first != c2a(s[3])) { return s; }
-      if (!IsIn(p.second, m[1].str())) { return s; }
+      if (s[3] != '*' && std::get<0>(p) != c2a(s[3])) { return s; }
+      if (!IsIn(std::get<1>(p), m[1].str())) { return s; }
 
-      Action a_not = (p.first == Action::C) ? Action::D : Action::C;
+      Action a_not = (std::get<0>(p) == Action::C) ? Action::D : Action::C;
       Reputation Z_not = g.rep_dynamics.RepAt(X,Y,a_not);
       if (!IsIn(Z_not, m[2].str())) { return s; }
     }
@@ -161,11 +161,11 @@ int ClassifyType(Game& g) {
   //   at most one of GN, NG, NN go to N
   bool G_dominant;
   {
-    Reputation gg = g.At(G, G).second;
+    Reputation gg = std::get<1>(g.At(G, G));
     int num_n = 0;
-    Reputation ng = g.At(N, G).second;
-    Reputation gn = g.At(G, N).second;
-    Reputation nn = g.At(N, N).second;
+    Reputation ng = std::get<1>(g.At(N, G));
+    Reputation gn = std::get<1>(g.At(G, N));
+    Reputation nn = std::get<1>(g.At(N, N));
     if (ng == N) num_n++;
     if (gn == N) num_n++;
     if (nn == N) num_n++;
