@@ -74,14 +74,16 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
   // 4. BGd:[BN]
   // 5. GG:cG:B, GG:c*:B, GG:*G:B, GG:**:B
   // 6. GG:cG:[NG]
-  // 7. GG:c[BN]:[NG]
+  // 7. GG:c[GN]:B
+  // 8. GG:c[BN]:[NG]
   const std::regex re1(R"([BNG][BNG]:[cd\*][BNG\*])");
   const std::regex re2(R"([BNG][BNG][cd]:[BNG])");
   const std::regex re3(R"([BNG][BNG]:[cd\*]\[([BNG]+)\])");
   const std::regex re4(R"([BNG][BNG][cd]:\[([BNG]+)\])");
   const std::regex re5(R"([BNG][BNG]:[cd\*][BNG\*]:[BNG])");
   const std::regex re6(R"([BNG][BNG]:[cd\*][BNG\*]:\[([BNG]+)\])");
-  const std::regex re7(R"([BNG][BNG]:[cd\*]\[([BNG]+)\]:\[([BNG]+)\])");
+  const std::regex re7(R"([BNG][BNG]:[cd\*]\[([BNG]+)\]:([BNG]))");
+  const std::regex re8(R"([BNG][BNG]:[cd\*]\[([BNG]+)\]:\[([BNG]+)\])");
   for (const std::string& s: patterns) {
     std::smatch m;
     if (std::regex_match(s, re1)) {
@@ -120,19 +122,21 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
       auto p = g.At(X, Y);
       if (s[3] != '*' && std::get<0>(p) != c2a(s[3])) { return s; }
       if (s[4] != '*' && std::get<1>(p) != c2r(s[4])) { return s; }
-      Action a_not = (std::get<0>(p) == Action::C) ? Action::D : Action::C;
-      Reputation Z_not = g.rep_dynamics.RepAt(X,Y,a_not);
-      if ( !IsIn(Z_not, m[1].str()) ) { return s; }
+      if ( !IsIn(std::get<2>(p), m[1].str()) ) { return s; }
     }
     else if (std::regex_match(s, m, re7)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       auto p = g.At(X, Y);
       if (s[3] != '*' && std::get<0>(p) != c2a(s[3])) { return s; }
       if (!IsIn(std::get<1>(p), m[1].str())) { return s; }
-
-      Action a_not = (std::get<0>(p) == Action::C) ? Action::D : Action::C;
-      Reputation Z_not = g.rep_dynamics.RepAt(X,Y,a_not);
-      if (!IsIn(Z_not, m[2].str())) { return s; }
+      if (std::get<2>(p) != c2r(m[2].str()[0]) ) { return s; }
+    }
+    else if (std::regex_match(s, m, re8)) {
+      Reputation X = c2r(s[0]), Y = c2r(s[1]);
+      auto p = g.At(X, Y);
+      if (s[3] != '*' && std::get<0>(p) != c2a(s[3])) { return s; }
+      if (!IsIn(std::get<1>(p), m[1].str())) { return s; }
+      if (!IsIn(std::get<2>(p), m[2].str())) { return s; }
     }
     else {
       std::cerr << s << std::endl;
@@ -176,59 +180,59 @@ int ClassifyType(Game& g) {
 
   // type-1: leading-eight like
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cG", "BGd:[BN]"}).empty()
+    Match(g, {"GG:cG:B", "GB:dG", "BG:cG:[BN]"}).empty()
     && G_dominant
     ) {
     types.insert(1);
   }
   // type-2: Bad players recover cooperation via being N
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cN", "NG:cG"}).empty()
+    Match(g, {"GG:cG:B", "GB:dG", "BG:cN", "NG:cG"}).empty()
     && G_dominant
     ) {
     types.insert(2);
   }
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cN", "NG:cN", "NN:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dG", "BG:cN", "NG:cN", "NN:*G"}).empty()
     && G_dominant
     ) {
     types.insert(2);
   }
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:cN", "NG:dG"}).empty()
+    Match(g, {"GG:cG:B", "GB:dG", "BG:cN", "NG:dG"}).empty()
     && G_dominant
     ) {
     types.insert(2);
   }
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dG", "BG:dN", "NG:cG"}).empty()
+    Match(g, {"GG:cG:B", "GB:dG", "BG:dN", "NG:cG"}).empty()
     && G_dominant
     ) {
     types.insert(2);
   }
   // type-3: punisher has N reputation. Bad players recover G by cooperating with G player.
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cG", "NG:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cG", "NG:*G"}).empty()
     && G_dominant
     ) {
     types.insert(3);
   }
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cG", "NN:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cG", "NN:*G"}).empty()
     && G_dominant
     ) {
     types.insert(3);
   }
   // type-3-1: punisher has B reputation. Bad players recover G via being N.
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dB", "BG:cN", "NG:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dB", "BG:cN", "NG:*G"}).empty()
     && G_dominant
     ) {
     types.insert(3);
   }
   // type-3-1: punisher has B reputation.
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dB", "BG:cG"}).empty()
+    Match(g, {"GG:cG:B", "GB:dB", "BG:cG"}).empty()
     && G_dominant
     ) {
     types.insert(3);
@@ -242,13 +246,13 @@ int ClassifyType(Game& g) {
   // ---
   // N population is minor
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cN", "NG:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cN", "NG:*G"}).empty()
     && G_dominant
     ) {
     types.insert(4);
   }
   if (
-    Match(g, {"GG:cG", "GGd:B", "GB:dN", "BG:cN", "NG:cN", "NN:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cN", "NG:cN", "NN:*G"}).empty()
     && G_dominant
     ) {
     types.insert(4);
@@ -256,11 +260,9 @@ int ClassifyType(Game& g) {
   // type-5: G and N works as G for the leading eight
   if (
     Match(g, {
-      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
-      "GGd:B", "GNd:B", "NGd:B", "NNd:B",
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
       "GB:d[GN]", "NB:d[GN]",
-      "BG:c[GN]", "BN:c[GN]",
-      "BGd:B", "BNd:B"
+      "BG:c[GN]:B", "BN:c[GN]:B",
       }).empty()
     && !G_dominant
     ) {
@@ -270,11 +272,9 @@ int ClassifyType(Game& g) {
   if (
     (
       Match(g, {
-        "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
-        "GGd:B", "GNd:B", "NGd:B", "NNd:B",
+        "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
         "GB:d[GN]", "NBd:B",
-        "BG:c[GN]", "BN:c[GN]",
-        "BGd:B", "BNd:B"
+        "BG:c[GN]:B", "BN:c[GN]:B",
       }).empty()
     )
     && !G_dominant
@@ -285,11 +285,9 @@ int ClassifyType(Game& g) {
   //      punishment by N against B may not always be justified
   if (
       Match(g, {
-        "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
-        "GGd:B", "GNd:B", "NGd:B", "NNd:B",
+        "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
         "GB:d[GN]",
-        "BG:c[GN]", "BN:dB",
-        "BGd:B"
+        "BG:c[GN]:B", "BN:dB",
       }).empty()
       && !G_dominant
     ) {
@@ -297,11 +295,9 @@ int ClassifyType(Game& g) {
   }
   if (
       Match(g, {
-        "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
-        "GGd:B", "GNd:B", "NGd:B", "NNd:B",
+        "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
         "GB:d[GN]",
-        "BN:c[GN]", "BG:dB",
-        "BNd:B"
+        "BN:c[GN]:B", "BG:dB",
       }).empty()
       && !G_dominant
     ) {
@@ -310,11 +306,9 @@ int ClassifyType(Game& g) {
   // type-8: G and N works as G for the leading eight, but N-N defects each other
   if (
     Match(g, {
-      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
-      "GGd:B", "GNd:B", "NGd:B",
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:d[GN]",
       "GB:d[GN]", "NB:d[GN]",
-      "BG:c[GN]", "BN:c[GN]",
-      "BGd:B", "BNd:B"
+      "BG:c[GN]:B", "BN:c[GN]:B",
     }).empty()
     && !G_dominant
     ) {
@@ -325,11 +319,9 @@ int ClassifyType(Game& g) {
   //         defection of B against N does not always cause Bad reputation
   if (
     Match(g, {
-      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
-      "GGd:B", "GNd:B", "NGd:B",
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:d[GN]",
       "GB:d[GN]", "NB:d[GN]",
-      "BG:c[GN]", "BN:d*",
-      "BGd:B"
+      "BG:c[GN]:B", "BN:d*",
     }).empty()
     && !G_dominant
     ) {
@@ -339,11 +331,9 @@ int ClassifyType(Game& g) {
   //          punishment of N against B causes a Bad reputation
   if (
     Match(g, {
-      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
-      "GGd:B", "GNd:B", "NGd:B",
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:d[GN]",
       "GB:d[GN]", "NB:dB",
-      "BG:c[GN]", "BN:c[GN]",
-      "BGd:B", "BNd:B"
+      "BG:c[GN]:B", "BN:c[GN]:B",
     }).empty()
     && !G_dominant
     ) {
@@ -354,11 +344,9 @@ int ClassifyType(Game& g) {
   //          hybrid of type 9 and 10
   if (
     Match(g, {
-      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:d[GN]",
-      "GGd:B", "GNd:B", "NGd:B",
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:d[GN]",
       "GB:d[GN]", "NB:dB",
-      "BG:c[GN]", "BN:d*",
-      "BGd:B"
+      "BG:c[GN]:B", "BN:d*",
     }).empty()
     && !G_dominant
     ) {
@@ -371,11 +359,9 @@ int ClassifyType(Game& g) {
   //          a variant of type-6
   if (
     Match(g, {
-      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
-      "GGd:B", "GNd:B", "NGd:[GB]", "NNd:[GB]",
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:[GB]", "NN:c[GN]:[GB]",
       "GB:dB", "NB:d[GN]",
-      "BG:c[GN]", "BN:c[GN]",
-      "BGd:B", "BNd:B"
+      "BG:c[GN]:B", "BN:c[GN]:B",
     }).empty()
     && !G_dominant
     ) {
@@ -386,17 +372,16 @@ int ClassifyType(Game& g) {
   //          Even though AllD player can eventually gain G reputation, she must spent a long time in B reputation since N players are not frequent. Thus, being a defector does not pay off.
   if (
     Match(g, {
-      "GG:c[GN]", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]",
-      "GGd:B", "GNd:B", "NGd:B", "NNd:B",
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
       "GB:d[GN]", "NB:d[GN]",
-      "BG:c[GN]", "BN:d[GN]",
-      "BGd:B"
+      "BG:c[GN]:B", "BN:d[GN]",
     }).empty()
     && !G_dominant
     ) {
     types.insert(13);
     // return 13;
   }
+
 
   int t = 0;
   if (types.size() > 0) {
