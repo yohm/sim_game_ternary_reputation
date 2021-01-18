@@ -513,6 +513,41 @@ void PrintHistogramActionRules(const std::vector<uint64_t> game_ids) {
   }
 }
 
+void PrintHistogramPrescriptions(const std::vector<uint64_t> game_ids) {
+  std::vector< std::array<size_t,2> > histo_next_act(9, {0,0});
+  std::vector< std::array<size_t,3> > histo_next_rep(9, {0, 0, 0});
+  std::vector< std::array<size_t,3> > histo_other_rep(9, {0, 0, 0});
+  for (uint64_t id: game_ids) {
+    Game g(0.02, 0.02, id);
+    for (size_t n = 0; n < 9; n++) {
+      Reputation donor = static_cast<Reputation >(n/3);
+      Reputation recip = static_cast<Reputation >(n%3);
+      auto p = g.At(donor, recip);
+      histo_next_act[n][static_cast<int>(std::get<0>(p))]++;
+      histo_next_rep[n][static_cast<int>(std::get<1>(p))]++;
+      histo_other_rep[n][static_cast<int>(std::get<2>(p))]++;
+    }
+  }
+
+  // print results
+  std::cout << "         :       d       c|        B       N       G|        B       N       G|" << std::endl;
+  for (size_t n = 0; n < 9; n++) {
+    Reputation donor = static_cast<Reputation>(n/3);
+    Reputation recip = static_cast<Reputation>(n%3);
+    std::cout << "(" << donor << "->" << recip << ") : "
+      << std::setw(8) << histo_next_act[n][0]
+      << std::setw(8) << histo_next_act[n][1]
+      << "|"
+      << std::setw(8) << histo_next_rep[n][0]
+      << std::setw(8) << histo_next_rep[n][1]
+      << std::setw(8) << histo_next_rep[n][2]
+      << "|"
+      << std::setw(8) << histo_other_rep[n][0]
+      << std::setw(8) << histo_other_rep[n][1]
+      << std::setw(8) << histo_other_rep[n][2] << std::endl;
+  }
+}
+
 void PrintHHisto(const std::array<HistoNormalBin,3>& h_histo) {
   assert( h_histo.size() == 3 );
   std::cout << h_histo.size() << ' ' << h_histo[0].bin << std::endl;
@@ -586,8 +621,9 @@ int main(int argc, char* argv[]) {
 
   for (auto kv: game_ids) {
     std::cout << "=================== TYPE " << kv.first << "====================" << std::endl;
-    PrintHistogramRepDynamics(kv.second);
-    PrintHistogramActionRules(kv.second);
+    PrintHistogramPrescriptions(kv.second);
+    // PrintHistogramRepDynamics(kv.second);
+    // PrintHistogramActionRules(kv.second);
     PrintHHisto(h_histo.at(kv.first));
   }
 
