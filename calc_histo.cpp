@@ -423,9 +423,10 @@ std::string ClassifyType(Game& g) {
   //          Even though AllD player can eventually gain G reputation, she must spent a long time in B reputation since N players are not frequent. Thus, being a defector does not pay off.
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
-      "GB:d[GN]", "NB:d[GN]",
-      "BG:c[GN]:B", "BN:d[GN]",
+      "GG:cG:B", "GN:cN:B", "NG:cG:B", "NN:cN:B",
+      "GB:dG", "NB:dG",
+      "BG:cG:B", "BN:dG",
+      "BB:dB:B"
     }).empty()
     && !G_dominant
     ) {
