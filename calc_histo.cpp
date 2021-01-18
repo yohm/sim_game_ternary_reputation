@@ -148,7 +148,7 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
 }
 
 
-int ClassifyType(Game& g) {
+std::string ClassifyType(Game& g) {
   const ReputationDynamics rd = g.rep_dynamics;
   const ActionRule ar = g.resident_ar;
 
@@ -176,87 +176,118 @@ int ClassifyType(Game& g) {
     G_dominant = (gg == G && num_n < 2);
   };
 
-  std::set<int> types;
+  std::set<std::string> types;
 
   // type-1: leading-eight like
   if (
     Match(g, {"GG:cG:B", "GB:dG", "BG:cG:[BN]"}).empty()
     && G_dominant
     ) {
-    types.insert(1);
+    types.insert("1. leading_eight");
   }
   // type-2: Bad players recover cooperation via being N
   if (
     Match(g, {"GG:cG:B", "GB:dG", "BG:cN", "NG:cG"}).empty()
     && G_dominant
     ) {
-    types.insert(2);
+    types.insert("2.1 B recovers via BG:cN->NG:cG");
   }
   if (
-    Match(g, {"GG:cG:B", "GB:dG", "BG:cN", "NG:cN", "NN:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dG", "BG:cN", "NG:cN", "NN:cG"}).empty()
     && G_dominant
     ) {
-    types.insert(2);
+    types.insert("2.2 B recovers via BG:cN->NN:cG");
+  }
+  if (
+    Match(g, {"GG:cG:B", "GB:dG", "BG:cN", "NG:cN", "NN:dG"}).empty()
+    && G_dominant
+    ) {
+    types.insert("2.3 B recovers via BG:cN->NN:dG");
   }
   if (
     Match(g, {"GG:cG:B", "GB:dG", "BG:cN", "NG:dG"}).empty()
     && G_dominant
     ) {
-    types.insert(2);
+    types.insert("2.4 B recovers via BG:cN->NG:dG");
   }
   if (
     Match(g, {"GG:cG:B", "GB:dG", "BG:dN", "NG:cG"}).empty()
     && G_dominant
     ) {
-    types.insert(2);
+    types.insert("2.5 B recovers via BG:dN->NG:cG");
   }
   // type-3: punisher has N reputation. Bad players recover G by cooperating with G player.
   if (
-    Match(g, {"GG:cG:B", "GB:dN", "BG:cG", "NG:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cG", "NG:cG"}).empty()
     && G_dominant
     ) {
-    types.insert(3);
+    types.insert("3.1 punisher becomes N. GB:dN->NG:cG");
   }
   if (
-    Match(g, {"GG:cG:B", "GB:dN", "BG:cG", "NN:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cG", "NG:dG"}).empty()
     && G_dominant
     ) {
-    types.insert(3);
+    types.insert("3.2 punisher becomes N. GB:dN->NG:dG");
   }
-  // type-3-1: punisher has B reputation. Bad players recover G via being N.
   if (
-    Match(g, {"GG:cG:B", "GB:dB", "BG:cN", "NG:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cG", "NN:cG", "NG:*N"}).empty()
     && G_dominant
     ) {
-    types.insert(3);
+    types.insert("3.3 punisher becomes N. GB:dN->NN:cG");
   }
-  // type-3-1: punisher has B reputation.
+  if (
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cG", "NN:dG", "NG:*N"}).empty()
+    && G_dominant
+    ) {
+    types.insert("3.4 punisher becomes N. GB:dN->NN:dG");
+  }
+  // type-3-5: punisher has B reputation.
   if (
     Match(g, {"GG:cG:B", "GB:dB", "BG:cG"}).empty()
     && G_dominant
     ) {
-    types.insert(3);
+    types.insert("3.5 punisher becomse B. GB:dB->BG:cG");
   }
 
   // type-4: punisher has N reputation. Bad players recover G via being N.
-  //    - GBd => N  // punisher has N reputation
-  //    - BGc => N
-  //    - BG => c
-  //    - NG P_{NG} => G
-  // ---
-  // N population is minor
   if (
-    Match(g, {"GG:cG:B", "GB:dN", "BG:cN", "NG:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cN", "NG:cG"}).empty()
     && G_dominant
     ) {
-    types.insert(4);
+    types.insert("4.1.1 punisher becomes N. B recovers via being N. GB:dN->NG:cG, BG:cN->NG:cG");
   }
   if (
-    Match(g, {"GG:cG:B", "GB:dN", "BG:cN", "NG:cN", "NN:*G"}).empty()
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cN", "NG:dG"}).empty()
     && G_dominant
     ) {
-    types.insert(4);
+    types.insert("4.1.2 punisher becomes N. B recovers via being N. GB:dN->NG:dG, BG:cN->NG:dG");
   }
+  if (
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cN", "NG:cN", "NN:dG"}).empty()
+    && G_dominant
+    ) {
+    types.insert("4.2.1 punisher becomes N. B recovers via being N. GB:dN->NN:dG, BG:cN->NN:dG");
+  }
+  if (
+    Match(g, {"GG:cG:B", "GB:dN", "BG:cN", "NG:cN", "NN:cG"}).empty()
+    && G_dominant
+    ) {
+    types.insert("4.2.2 punisher becomes N. B recovers via being N. GB:dN->NN:cG, BG:cN->NN:cG");
+  }
+  // type-3-6: punisher has B reputation. Bad players recover G via being N.
+  if (
+    Match(g, {"GG:cG:B", "GB:dB", "BG:cN", "NG:cG"}).empty()
+    && G_dominant
+    ) {
+    types.insert("4.3.1 punisher becomes B. B recovers via being N. GB:dB->BG:cN->NG:cG");
+  }
+  if (
+    Match(g, {"GG:cG:B", "GB:dB", "BG:cN", "NG:dG"}).empty()
+    && G_dominant
+    ) {
+    types.insert("4.3.2 punisher becomes B. B recovers via being N. GB:dB->BG:cN->NG:dG");
+  }
+
   // type-5: G and N works as G for the leading eight
   if (
     Match(g, {
@@ -266,42 +297,62 @@ int ClassifyType(Game& g) {
       }).empty()
     && !G_dominant
     ) {
-    types.insert(5);
+    types.insert("5. GN works as G for the leading eight.");
   }
   // type-6: G and N works as G for the leading eight, but punishment by N is not justified
   if (
     (
       Match(g, {
         "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
-        "GB:d[GN]", "NBd:B",
+        "GB:d[GN]", "NB:dB",
         "BG:c[GN]:B", "BN:c[GN]:B",
       }).empty()
     )
     && !G_dominant
     ) {
-    types.insert(6);
+    types.insert("6. GN works as G. Punishment by N is not justified. NB:dB");
   }
   // type-7: G and N works as G for the leading eight, but B players cooperate only with either G or N
   //      punishment by N against B may not always be justified
   if (
       Match(g, {
         "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
-        "GB:d[GN]",
+        "GB:d[GN]", "NB:d[GN]",
         "BG:c[GN]:B", "BN:dB",
       }).empty()
       && !G_dominant
     ) {
-    types.insert(7);
+    types.insert("7.1.1 GN works as G. B defects against N. BN:dB");
   }
   if (
-      Match(g, {
+    Match(g, {
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
+      "GB:d[GN]", "NB:d[GN]",
+      "BN:c[GN]:B", "BG:dB",
+    }).empty()
+    && !G_dominant
+    ) {
+    types.insert("7.1.2 GN works as G. B defects against G. BG:dB");
+  }
+  if (
+    Match(g, {
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
+      "GB:d[GN]", "NB:dB",
+      "BG:c[GN]:B", "BN:dB",
+    }).empty()
+    && !G_dominant
+    ) {
+    types.insert("7.2.1 GN works as G. B defects against N. Punishment by N is not justified. BN:dB, NB:dB");
+  }
+  if (
+    Match(g, {
         "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
-        "GB:d[GN]",
+        "GB:d[GN]", "NB:dB",
         "BN:c[GN]:B", "BG:dB",
       }).empty()
       && !G_dominant
     ) {
-    types.insert(7);
+    types.insert("7.2.2 GN works as G. B defects against G. Punishment by N is not justified. BG:dB, NB:dB");
   }
   // type-8: G and N works as G for the leading eight, but N-N defects each other
   if (
@@ -312,7 +363,7 @@ int ClassifyType(Game& g) {
     }).empty()
     && !G_dominant
     ) {
-    types.insert(8);
+    types.insert("8. GN works as G but NN defects. NN:d[GN]");
   }
   // type-9: G and N works as G for the leading eight, but N-N defects each other
   //         B cooperates with G but defects against N (similar to type 8 but differ in `BN`)
@@ -325,7 +376,7 @@ int ClassifyType(Game& g) {
     }).empty()
     && !G_dominant
     ) {
-    types.insert(9);
+    types.insert("9. GN works as G but NN defects. B defects against N. NN:d[GN], BN:d*");
   }
   // type-10: G and N works as G for the leading eight, but N-N defects each other
   //          punishment of N against B causes a Bad reputation
@@ -337,7 +388,7 @@ int ClassifyType(Game& g) {
     }).empty()
     && !G_dominant
     ) {
-    types.insert(10);
+    types.insert("10. GN works as G but NN defects. Punishment by N is not justified. NN:d[GN], NB:dB");
   }
   // type-11: G and N works as G for the leading eight, but N-N defects each other
   //          punishment of N against B causes a Bad reputation, and B defects against N
@@ -350,7 +401,7 @@ int ClassifyType(Game& g) {
     }).empty()
     && !G_dominant
     ) {
-    types.insert(11);
+    types.insert("11. GN works as G but NN defects. Punishment by N is not justified. B defects against N. NN:d[GN], NB:dB, BN:d*");
   }
   // type-12: G and N works as G for the leading eight
   //          N can maintain G reputation when making a mistake.
@@ -365,7 +416,7 @@ int ClassifyType(Game& g) {
     }).empty()
     && !G_dominant
     ) {
-    types.insert(12);
+    types.insert("12. GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:[GB] NN:c[GN]:[GB], GB:dB");
   }
   // type-13: G and N works as G for the leading eight
   //          B and recovers a good reputation by defecting against N.
@@ -378,15 +429,15 @@ int ClassifyType(Game& g) {
     }).empty()
     && !G_dominant
     ) {
-    types.insert(13);
+    types.insert("13. GN works as G. B recovers by defecting against N. BN:d[GN]");
     // return 13;
   }
 
 
-  int t = 0;
+  std::string type;
   if (types.size() > 0) {
     if (types.size() > 1) {
-      for (int t: types) {
+      for (const std::string& t: types) {
         std::cerr << t << ' ';
       }
       std::cerr << std::endl;
@@ -394,7 +445,7 @@ int ClassifyType(Game& g) {
       std::cerr << "G_dominant: " << G_dominant << std::endl;
       throw std::runtime_error("duplicate types");
     }
-    t = *types.begin();
+    type = *types.begin();
   }
   else {
     std::cerr << std::endl;
@@ -403,7 +454,7 @@ int ClassifyType(Game& g) {
     throw std::runtime_error("unknown types");
   }
 
-  return t;
+  return type;
 }
 
 void PrintHistogramRepDynamics(const std::vector<uint64_t> game_ids) {
@@ -496,12 +547,11 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("failed to open file");
   }
 
-  const size_t N_TYPES = 14;
   const double bin = 0.05;
   using histo3_t = std::array<HistoNormalBin,3>;
-  std::map<int, std::vector<uint64_t >> game_ids;
-  std::map<int, histo3_t> h_histo;
-  auto get_or_insert_h_histo = [&h_histo,bin](int i)->histo3_t& {
+  std::map<std::string, std::vector<uint64_t >> game_ids;
+  std::map<std::string, histo3_t> h_histo;
+  auto get_or_insert_h_histo = [&h_histo,bin](std::string i)->histo3_t& {
     if (h_histo.find(i) == h_histo.end()) {
       h_histo.insert( std::make_pair(i, histo3_t({bin, bin, bin}) ));
     }
@@ -514,7 +564,7 @@ int main(int argc, char* argv[]) {
     fin >> org_gid >> gid >> c_prob >> h0 >> h1 >> h2;
     if (fin) {
       Game g(0.02, 0.02, gid, c_prob, {h0,h1,h2} );
-      int i = ClassifyType(g);
+      std::string i = ClassifyType(g);
       game_ids[i].push_back(gid);
       get_or_insert_h_histo(i).at(0).Add(h0);
       get_or_insert_h_histo(i).at(1).Add(h1);
@@ -526,9 +576,9 @@ int main(int argc, char* argv[]) {
     std::cerr << "type: " << kv.first << ", " << kv.second.size() << std::endl;
   }
 
-  if (game_ids.find(0) != game_ids.end()) {
+  if (game_ids.find("") != game_ids.end()) {
     std::ofstream fout("non_L8.txt");
-    for (auto gid: game_ids.at(0)) {
+    for (auto gid: game_ids.at("")) {
       fout << gid << std::endl;
     }
     fout.close();
