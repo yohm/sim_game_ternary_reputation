@@ -8,6 +8,7 @@
 #include <fstream>
 #include <cassert>
 #include <regex>
+#include <omp.h>
 
 #include "ReputationDynamics.hpp"
 #include "Game.hpp"
@@ -32,6 +33,17 @@ class HistoNormalBin {
       result[val] = freq;
     }
     return result;
+  }
+  void Merge(const HistoNormalBin& other) {
+    if (bin != other.bin) { throw std::runtime_error("bin size must be same"); }
+    for (auto kv : other.histo) {
+      if (histo.find(kv.first) == histo.end()) {
+        histo[kv.first] = kv.second;
+      }
+      else {
+        histo[kv.first] += kv.second;
+      }
+    }
   }
   const double bin;
   private:
@@ -613,17 +625,6 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("failed to open file");
   }
 
-  const double bin = 0.05;
-  using histo3_t = std::array<HistoNormalBin,3>;
-  std::map<std::string, std::vector<uint64_t >> game_ids;
-  std::map<std::string, histo3_t> h_histo;
-  auto get_or_insert_h_histo = [&h_histo,bin](std::string i)->histo3_t& {
-    if (h_histo.find(i) == h_histo.end()) {
-      h_histo.insert( std::make_pair(i, histo3_t({bin, bin, bin}) ));
-    }
-    return h_histo.at(i);
-  };
-
   std::vector< std::tuple<uint64_t,double,double,double,double> > inputs;
 
   while(fin) {
@@ -635,35 +636,75 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  for (auto in: inputs) {
-    uint64_t gid = std::get<0>(in);
-    double c_prob = std::get<1>(in), h0 = std::get<2>(in), h1 = std::get<3>(in), h2 = std::get<4>(in);
+  struct Output {
+    std::map<std::string, std::vector<uint64_t> > game_ids;
+    using histo3_t = std::array<HistoNormalBin,3>;
+    std::map<std::string, histo3_t > h_histos;
+    histo3_t & GetOrInit(const std::string& type) {
+      const double bin = 0.05;
+      if (h_histos.find(type) == h_histos.end()) {
+        h_histos.insert( std::make_pair(type, histo3_t({bin, bin, bin})));
+      }
+      return h_histos.at(type);
+    }
+    void Merge(const Output& other) {
+      for (auto kv: other.game_ids) {
+        game_ids[kv.first].insert(game_ids[kv.first].begin(), kv.second.begin(), kv.second.end());
+      }
+      for (auto kv: other.h_histos) {
+        histo3_t& h3 = GetOrInit(kv.first);
+        h3[0].Merge( kv.second[0] );
+        h3[1].Merge( kv.second[1] );
+        h3[2].Merge( kv.second[2] );
+      }
+    }
+  };
+
+  int num_threads;
+  #pragma omp parallel
+  { num_threads = omp_get_num_threads(); };
+
+  std::cerr << "num_threads: " << num_threads << std::endl;
+
+  std::vector<Output> outs(num_threads);
+
+  #pragma omp parallel for
+  for (size_t i = 0; i < inputs.size(); i++) {
+    uint64_t gid = std::get<0>(inputs[i]);
+    double c_prob = std::get<1>(inputs[i]), h0 = std::get<2>(inputs[i]), h1 = std::get<3>(inputs[i]), h2 = std::get<4>(inputs[i]);
     Game g(0.02, 0.02, gid, c_prob, {h0, h1, h2} );
     std::string type = ClassifyType(g);
-    game_ids[type].push_back(gid);
-    get_or_insert_h_histo(type).at(0).Add(h0);
-    get_or_insert_h_histo(type).at(1).Add(h1);
-    get_or_insert_h_histo(type).at(2).Add(h2);
+    int th = omp_get_thread_num();
+    outs[th].game_ids[type].push_back(gid);
+    Output::histo3_t & histos = outs[th].GetOrInit(type);
+    histos.at(0).Add(h0);
+    histos.at(1).Add(h1);
+    histos.at(2).Add(h2);
   }
 
-  for (auto kv: game_ids) {
+  Output out;
+  for (size_t i = 0; i < num_threads; i++) {
+    out.Merge( outs[i] );
+  }
+
+  for (auto kv: out.game_ids) {
     std::cout << "type: " << kv.first << ", " << kv.second.size() << std::endl;
   }
 
-  if (game_ids.find("") != game_ids.end()) {
+  if (out.game_ids.find("") != out.game_ids.end()) {
     std::ofstream fout("non_L8.txt");
-    for (auto gid: game_ids.at("")) {
+    for (auto gid: out.game_ids.at("")) {
       fout << gid << std::endl;
     }
     fout.close();
   }
 
-  for (auto kv: game_ids) {
+  for (auto kv: out.game_ids) {
     std::cout << "=================== TYPE " << kv.first << "====================" << std::endl;
     PrintHistogramPrescriptions(kv.second);
     // PrintHistogramRepDynamics(kv.second);
     // PrintHistogramActionRules(kv.second);
-    PrintHHisto(h_histo.at(kv.first));
+    PrintHHisto(out.GetOrInit(kv.first));
   }
 
   return 0;
