@@ -624,18 +624,26 @@ int main(int argc, char* argv[]) {
     return h_histo.at(i);
   };
 
+  std::vector< std::tuple<uint64_t,double,double,double,double> > inputs;
+
   while(fin) {
     uint64_t org_gid,gid;
     double c_prob,h0,h1,h2;
     fin >> org_gid >> gid >> c_prob >> h0 >> h1 >> h2;
     if (fin) {
-      Game g(0.02, 0.02, gid, c_prob, {h0,h1,h2} );
-      std::string i = ClassifyType(g);
-      game_ids[i].push_back(gid);
-      get_or_insert_h_histo(i).at(0).Add(h0);
-      get_or_insert_h_histo(i).at(1).Add(h1);
-      get_or_insert_h_histo(i).at(2).Add(h2);
+      inputs.emplace_back(std::make_tuple(gid,c_prob,h0,h1,h2));
     }
+  }
+
+  for (auto in: inputs) {
+    uint64_t gid = std::get<0>(in);
+    double c_prob = std::get<1>(in), h0 = std::get<2>(in), h1 = std::get<3>(in), h2 = std::get<4>(in);
+    Game g(0.02, 0.02, gid, c_prob, {h0, h1, h2} );
+    std::string type = ClassifyType(g);
+    game_ids[type].push_back(gid);
+    get_or_insert_h_histo(type).at(0).Add(h0);
+    get_or_insert_h_histo(type).at(1).Add(h1);
+    get_or_insert_h_histo(type).at(2).Add(h2);
   }
 
   for (auto kv: game_ids) {
