@@ -382,21 +382,31 @@ std::string ClassifyType(Game& g) {
   //         defection of B against N does not always cause Bad reputation
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:d[GN]",
-      "GB:d[GN]", "NB:d[GN]",
-      "BG:c[GN]:B", "BN:d*",
+      "GG:cG:B", "GN:cN:B", "NG:cG:B", "NN:dN",
+      "GB:dG", "NB:dG",
+      "BG:cG:B", "BN:dB:B",
     }).empty()
     && !G_dominant
     ) {
-    types.insert("09. GN works as G but NN defects. B defects against N. NN:d[GN], BN:d*");
+    types.insert("09-1. GN works as G but NN defects. B defects against N. NN:d[GN], BN:d*, NB:dG");
+  }
+  if (
+    Match(g, {
+      "GG:cG:B", "GN:cN:B", "NG:cG:B", "NN:dN",
+      "GB:dG", "NB:dN",
+      "BG:cG:B", "BN:dB:B",
+    }).empty()
+    && !G_dominant
+    ) {
+    types.insert("09-2. GN works as G but NN defects. B defects against N. NN:d[GN], BN:d*, NB:dN");
   }
   // type-10: G and N works as G for the leading eight, but N-N defects each other
   //          punishment of N against B causes a Bad reputation
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:d[GN]",
-      "GB:d[GN]", "NB:dB",
-      "BG:c[GN]:B", "BN:c[GN]:B",
+      "GG:cG:B", "GN:cN:B", "NG:cG:B", "NN:dN",
+      "GB:dG", "NB:dB:B",
+      "BG:cG:B", "BN:c[GN]:B",
     }).empty()
     && !G_dominant
     ) {
@@ -407,9 +417,9 @@ std::string ClassifyType(Game& g) {
   //          hybrid of type 9 and 10
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:d[GN]",
-      "GB:d[GN]", "NB:dB",
-      "BG:c[GN]:B", "BN:d*",
+      "GG:cG:B", "GN:cN:B", "NG:cG:B", "NN:dN",
+      "GB:dG", "NB:dB:B",
+      "BG:cG:B", "BN:dB:B",
     }).empty()
     && !G_dominant
     ) {
@@ -423,7 +433,7 @@ std::string ClassifyType(Game& g) {
   if (
     Match(g, {
       "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
-      "GB:dB", "NB:d[GN]",
+      "GB:dB:B", "NB:d[GN]",
       "BG:c[GN]:B", "BN:c[GN]:B",
     }).empty()
     && !G_dominant
@@ -432,9 +442,9 @@ std::string ClassifyType(Game& g) {
   }
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:G", "NN:c[GN]:B",
-      "GB:dB", "NB:d[GN]",
-      "BG:c[GN]:B", "BN:c[GN]:B",
+      "GG:cG:B", "GN:cG:B", "NG:cN:G", "NN:cN:B",
+      "GB:dB:B", "NB:dN",
+      "BG:cG:B", "BN:cG:B",
     }).empty()
     && !G_dominant
     ) {
@@ -442,9 +452,9 @@ std::string ClassifyType(Game& g) {
   }
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:G",
-      "GB:dB", "NB:d[GN]",
-      "BG:c[GN]:B", "BN:c[GN]:B",
+      "GG:cG:B", "GN:cG:B", "NG:cN:B", "NN:cN:G",
+      "GB:dB:B", "NB:dN",
+      "BG:cG:B", "BN:cG:B",
     }).empty()
     && !G_dominant
     ) {
@@ -452,9 +462,9 @@ std::string ClassifyType(Game& g) {
   }
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:G", "NN:c[GN]:G",
-      "GB:dB", "NB:d[GN]",
-      "BG:c[GN]:B", "BN:c[GN]:B",
+      "GG:cG:B", "GN:cG:B", "NG:cN:G", "NN:cN:G",
+      "GB:dB:B", "NB:dN",
+      "BG:cG:B", "BN:cG:B",
     }).empty()
     && !G_dominant
     ) {
