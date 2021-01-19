@@ -661,14 +661,14 @@ int main(int argc, char* argv[]) {
   };
 
   int num_threads;
-  #pragma omp parallel
+  #pragma omp parallel shared(num_threads)
   { num_threads = omp_get_num_threads(); };
 
   std::cerr << "num_threads: " << num_threads << std::endl;
 
   std::vector<Output> outs(num_threads);
 
-  #pragma omp parallel for
+  #pragma omp parallel for shared(inputs,outs)
   for (size_t i = 0; i < inputs.size(); i++) {
     uint64_t gid = std::get<0>(inputs[i]);
     double c_prob = std::get<1>(inputs[i]), h0 = std::get<2>(inputs[i]), h1 = std::get<3>(inputs[i]), h2 = std::get<4>(inputs[i]);
