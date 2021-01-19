@@ -410,13 +410,43 @@ std::string ClassifyType(Game& g) {
   //          a variant of type-6
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:[GB]", "NN:c[GN]:[GB]",
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
       "GB:dB", "NB:d[GN]",
       "BG:c[GN]:B", "BN:c[GN]:B",
     }).empty()
     && !G_dominant
     ) {
-    types.insert("12. GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:[GB] NN:c[GN]:[GB], GB:dB");
+    types.insert("12.1 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:B NN:c[GN]:B, GB:dB");
+  }
+  if (
+    Match(g, {
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:G", "NN:c[GN]:B",
+      "GB:dB", "NB:d[GN]",
+      "BG:c[GN]:B", "BN:c[GN]:B",
+    }).empty()
+    && !G_dominant
+    ) {
+    types.insert("12.2 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:G NN:c[GN]:B, GB:dB");
+  }
+  if (
+    Match(g, {
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:G",
+      "GB:dB", "NB:d[GN]",
+      "BG:c[GN]:B", "BN:c[GN]:B",
+    }).empty()
+    && !G_dominant
+    ) {
+    types.insert("12.3 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:B NN:c[GN]:G, GB:dB");
+  }
+  if (
+    Match(g, {
+      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:G", "NN:c[GN]:G",
+      "GB:dB", "NB:d[GN]",
+      "BG:c[GN]:B", "BN:c[GN]:B",
+    }).empty()
+    && !G_dominant
+    ) {
+    types.insert("12.4 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:G NN:c[GN]:G, GB:dB");
   }
   // type-13: G and N works as G for the leading eight
   //          B and recovers a good reputation by defecting against N.
@@ -531,7 +561,7 @@ void PrintHistogramPrescriptions(const std::vector<uint64_t> game_ids) {
   }
 
   // print results
-  std::cout << "         :       d       c|        B       N       G|        B       N       G|" << std::endl;
+  std::cout << "       :        d       c|       B       N       G|       B       N       G|" << std::endl;
   for (size_t n = 0; n < 9; n++) {
     Reputation donor = static_cast<Reputation>(n/3);
     Reputation recip = static_cast<Reputation>(n%3);
