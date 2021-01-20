@@ -473,47 +473,46 @@ std::string ClassifyType(Game& g) {
   //          a variant of type-6
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
+      "GG:cG:B", "GN:cG:B", "NG:cN:[GB]", "NN:cN:[GB]",
+      "GB:dB:B", "NB:dN",
+      "BG:cG:B", "BN:cG:B",
+      // BB:(cG:B|dG:[BG])
+    }).empty()
+    && !G_dominant
+    ) {
+    types.insert("12.1.1 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:B NN:c[GN]:B, GB:dB");
+  }
+  if (
+    Match(g, {
+      "GG:cG:B", "GN:cN:B", "NG:c[GN]:B", "NN:c[GN]:B",
       "GB:dB:B", "NB:d[GN]",
       "BG:c[GN]:B", "BN:c[GN]:B",
     }).empty()
     && !G_dominant
     ) {
-    types.insert("12.1 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:B NN:c[GN]:B, GB:dB");
+    types.insert("12.1.2 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:B NN:c[GN]:B, GB:dB");
   }
   if (
     Match(g, {
-      "GG:cG:B", "GN:cG:B", "NG:cN:G", "NN:cN:B",
-      "GB:dB:B", "NB:dN",
-      "BG:cG:B", "BN:cG:B"
-      // BB:(cG:B|dG:B|dG:G)
+      "GG:cN:B", "GN:cG:B", "NG:c[GN]:B", "NN:c[GN]:B",
+      "GB:dB:B", "NB:d[GN]",
+      "BG:c[GN]:B", "BN:c[GN]:B",
     }).empty()
     && !G_dominant
     ) {
-    types.insert("12.2 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:G NN:c[GN]:B, GB:dB");
+    types.insert("12.1.3 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:B NN:c[GN]:B, GB:dB");
   }
   if (
     Match(g, {
-      "GG:cG:B", "GN:cG:B", "NG:cN:B", "NN:cN:G",
-      "GB:dB:B", "NB:dN",
-      "BG:cG:B", "BN:cG:B",
-      // BB:(cG:B|dG:B|dG:G)
+      "GG:cN:B", "GN:cN:B", "NG:c[GN]:B", "NN:c[GN]:B",
+      "GB:dB:B", "NB:d[GN]",
+      "BG:c[GN]:B", "BN:c[GN]:B",
     }).empty()
     && !G_dominant
     ) {
-    types.insert("12.3 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:B NN:c[GN]:G, GB:dB");
+    types.insert("12.1.4 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:B NN:c[GN]:B, GB:dB");
   }
-  if (
-    Match(g, {
-      "GG:cG:B", "GN:cG:B", "NG:cN:G", "NN:cN:G",
-      "GB:dB:B", "NB:dN",
-      "BG:cG:B", "BN:cG:B",
-      // BB:(cG:B|dG:B|dG:G)
-    }).empty()
-    && !G_dominant
-    ) {
-    types.insert("12.4 GN works as G. N becomes G even when making a mistake. Punishment by G is not justified. NG:c[GN]:G NN:c[GN]:G, GB:dB");
-  }
+  // ---------------------
   // type-13: G and N works as G for the leading eight
   //          B and recovers a good reputation by defecting against N.
   //          Even though AllD player can eventually gain G reputation, she must spent a long time in B reputation since N players are not frequent. Thus, being a defector does not pay off.
@@ -554,68 +553,43 @@ std::string ClassifyType(Game& g) {
   return type;
 }
 
-void PrintHistogramRepDynamics(const std::vector<uint64_t> game_ids) {
-  std::cout << "num_ESSs: " << game_ids.size() << std::endl;
+struct Input {
+  Input(uint64_t _gid, double _cprob, double h0, double h1, double h2) : gid(_gid), c_prob(_cprob), h({h0,h1,h2}) {};
+  uint64_t gid;
+  double c_prob;
+  std::array<double,3> h;
+};
 
-  std::vector<uint64_t> rep_ids;
-  for (size_t i = 0; i < game_ids.size(); i++) {
-    rep_ids.emplace_back(game_ids[i] >> 9ull);
-  }
-  /*
-  std::sort(rep_ids.begin(), rep_ids.end());
-  rep_ids.erase( std::unique(rep_ids.begin(), rep_ids.end()), rep_ids.end() );
-  std::cout << "# of unique Reputation Dynamics: " << rep_ids.size() << std::endl;
-   */
-
-  std::vector< std::array<size_t,3> > histo(18, {0,0,0});
-  for (uint64_t id: rep_ids) {
-    ReputationDynamics rd(id);
-    if ( rd.RepAt(Reputation::G, Reputation::G, Action::D) != Reputation::B ) {
-      throw std::runtime_error("must not happen");
+struct Output {
+  std::map<std::string, std::vector<Input>> map_type_inputs;
+  using histo3_t = std::array<HistoNormalBin,3>;
+  std::map<std::string,histo3_t> MakeHistoH() const {
+    std::map<std::string, histo3_t> h_histos;
+    for (auto kv: map_type_inputs) {
+      std::string type = kv.first;
+      const double bin = 0.05;
+      h_histos.insert( std::make_pair(type, histo3_t({bin, bin, bin})));
+      for (const Input& in : kv.second) {
+        h_histos.at(type).at(0).Add(in.h.at(0));
+        h_histos.at(type).at(1).Add(in.h.at(1));
+        h_histos.at(type).at(2).Add(in.h.at(2));
+      }
     }
-    for (size_t n = 0; n < 18; n++) {
-      histo[n][static_cast<int>(rd.reputations[n])]++;
-    }
+    return std::move(h_histos);
   }
-
-  // print results
-  std::cout << "         :        B       N       G" << std::endl;
-  for (size_t n = 0; n < 18; n++) {
-    Reputation rep_d = static_cast<Reputation>(n/6);
-    Reputation rep_r = static_cast<Reputation>((n/2) % 3);
-    Action act = static_cast<Action>(n % 2);
-    std::cout << "(" << rep_d << "->" << rep_r << "," << act << ") : "
-              << std::setw(8) << histo[n][0]
-              << std::setw(8) << histo[n][1]
-              << std::setw(8) << histo[n][2] << std::endl;
-  }
-}
-
-void PrintHistogramActionRules(const std::vector<uint64_t> game_ids) {
-  std::cout << "Histogram of ActionRules: " << std::endl;
-  std::vector< std::array<size_t,2> > histo(9, {0,0});
-  for (size_t i = 0; i < game_ids.size(); i++) {
-    uint64_t ar_id = (game_ids[i] & 511ull);
-    ActionRule ar(ar_id);
-    for (size_t n = 0; n < 9; n++) {
-      histo[n][static_cast<int>(ar.actions[n])]++;
+  void Merge(const Output& other) {
+    for (auto kv: other.map_type_inputs) {
+      map_type_inputs[kv.first].insert(map_type_inputs[kv.first].begin(), kv.second.begin(), kv.second.end());
     }
   }
-  for (size_t n = 0; n < 9; n++) {
-    Reputation rep_d = static_cast<Reputation>(n/3);
-    Reputation rep_r = static_cast<Reputation>(n%3);
-    std::cout << "(" << rep_d << "->" << rep_r << ") :"
-              << std::setw(8) << histo[n][0]
-              << std::setw(8) << histo[n][1] << std::endl;
-  }
-}
+};
 
-void PrintHistogramPrescriptions(const std::vector<uint64_t> game_ids) {
+void PrintHistogramPrescriptions(const std::vector<Input> inputs) {
   std::vector< std::array<size_t,2> > histo_next_act(9, {0,0});
   std::vector< std::array<size_t,3> > histo_next_rep(9, {0, 0, 0});
   std::vector< std::array<size_t,3> > histo_other_rep(9, {0, 0, 0});
-  for (uint64_t id: game_ids) {
-    Game g(0.02, 0.02, id);
+  for (const Input& input: inputs) {
+    Game g(0.02, 0.02, input.gid);
     for (size_t n = 0; n < 9; n++) {
       Reputation donor = static_cast<Reputation >(n/3);
       Reputation recip = static_cast<Reputation >(n%3);
@@ -627,7 +601,7 @@ void PrintHistogramPrescriptions(const std::vector<uint64_t> game_ids) {
   }
 
   // print results
-  std::cout << "       :        d       c|       B       N       G|       B       N       G|" << std::endl;
+  std::cout << "       :        d       c|       B       N       G|       B       N       G" << std::endl;
   for (size_t n = 0; n < 9; n++) {
     Reputation donor = static_cast<Reputation>(n/3);
     Reputation recip = static_cast<Reputation>(n%3);
@@ -691,40 +665,17 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("failed to open file");
   }
 
-  std::vector< std::tuple<uint64_t,double,double,double,double> > inputs;
+  std::vector<Input> inputs;
 
   while(fin) {
     uint64_t org_gid,gid;
     double c_prob,h0,h1,h2;
     fin >> org_gid >> gid >> c_prob >> h0 >> h1 >> h2;
     if (fin) {
-      inputs.emplace_back(std::make_tuple(gid,c_prob,h0,h1,h2));
+      inputs.emplace_back(gid, c_prob, h0, h1, h2);
     }
   }
 
-  struct Output {
-    std::map<std::string, std::vector<uint64_t> > game_ids;
-    using histo3_t = std::array<HistoNormalBin,3>;
-    std::map<std::string, histo3_t > h_histos;
-    histo3_t & GetOrInit(const std::string& type) {
-      const double bin = 0.05;
-      if (h_histos.find(type) == h_histos.end()) {
-        h_histos.insert( std::make_pair(type, histo3_t({bin, bin, bin})));
-      }
-      return h_histos.at(type);
-    }
-    void Merge(const Output& other) {
-      for (auto kv: other.game_ids) {
-        game_ids[kv.first].insert(game_ids[kv.first].begin(), kv.second.begin(), kv.second.end());
-      }
-      for (auto kv: other.h_histos) {
-        histo3_t& h3 = GetOrInit(kv.first);
-        h3[0].Merge( kv.second[0] );
-        h3[1].Merge( kv.second[1] );
-        h3[2].Merge( kv.second[2] );
-      }
-    }
-  };
 
   int num_threads;
   #pragma omp parallel shared(num_threads) default(none)
@@ -736,16 +687,11 @@ int main(int argc, char* argv[]) {
 
   #pragma omp parallel for shared(inputs,outs) default(none)
   for (size_t i = 0; i < inputs.size(); i++) {
-    uint64_t gid = std::get<0>(inputs[i]);
-    double c_prob = std::get<1>(inputs[i]), h0 = std::get<2>(inputs[i]), h1 = std::get<3>(inputs[i]), h2 = std::get<4>(inputs[i]);
-    Game g(0.02, 0.02, gid, c_prob, {h0, h1, h2} );
+    const Input& input = inputs[i];
+    Game g(0.02, 0.02, input.gid, input.c_prob, input.h);
     std::string type = ClassifyType(g);
     int th = omp_get_thread_num();
-    outs[th].game_ids[type].push_back(gid);
-    Output::histo3_t & histos = outs[th].GetOrInit(type);
-    histos.at(0).Add(h0);
-    histos.at(1).Add(h1);
-    histos.at(2).Add(h2);
+    outs[th].map_type_inputs[type].emplace_back(input);
   }
 
   Output out;
@@ -753,32 +699,24 @@ int main(int argc, char* argv[]) {
     out.Merge( outs[i] );
   }
 
-  for (auto kv: out.game_ids) {
+  for (auto kv: out.map_type_inputs) {
     std::cout << "type: " << kv.first << ", " << kv.second.size() << std::endl;
   }
 
-  if (out.game_ids.find("") != out.game_ids.end()) {
-    std::ofstream fout("non_L8.txt");
-    for (auto gid: out.game_ids.at("")) {
-      fout << gid << std::endl;
-    }
-    fout.close();
-  }
-
-  for (auto kv: out.game_ids) {
+  auto histo_map = out.MakeHistoH();
+  for (auto kv: out.map_type_inputs) {
     std::cout << "=================== TYPE " << kv.first << "====================" << std::endl;
     PrintHistogramPrescriptions(kv.second);
     // PrintHistogramRepDynamics(kv.second);
     // PrintHistogramActionRules(kv.second);
-    PrintHHisto(out.GetOrInit(kv.first));
+    PrintHHisto(histo_map.at(kv.first));
 
     const size_t OUT_SIZE_TH = 1000;
     if (kv.second.size() < OUT_SIZE_TH) {
       std::string key = ExtractKeyFromType(kv.first);
       std::ofstream fout(std::string("DP_") + key);
-      for (auto gid : kv.second) {
-        Game g(0.02, 0.02, gid);
-        fout << g.Inspect();
+      for (const Input& input: kv.second) {
+        fout << input.gid << ' ' << input.gid << ' ' << input.c_prob << ' ' << input.h.at(0) << ' ' << input.h.at(1) << ' ' << input.h.at(2) << std::endl;
       }
       fout.close();
     }
