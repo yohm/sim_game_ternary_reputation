@@ -315,14 +315,50 @@ std::string ClassifyType(Game& g) {
   if (
     (
       Match(g, {
-        "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
+        "GG:cG:B", "GN:cN:B", "NG:c[GN]:B", "NN:c[GN]:B",
         "GB:d[GN]", "NB:dB:B",
-        "BG:c[GN]:B", "BN:c[GN]:B",
+        "BG:cG:B", "BN:c[GN]:B",
       }).empty()
     )
     && !G_dominant
     ) {
-    types.insert("06. GN works as G. Punishment by N is not justified. NB:dB");
+    types.insert("06.1.1 GN works as G. Punishment by N is not justified. NB:dB, GG:cG, GB:cG");
+  }
+  if (
+    (
+      Match(g, {
+        "GG:cG:B", "GN:cN:B", "NG:c[GN]:B", "NN:c[GN]:B",
+        "GB:dG", "NB:dB:B",
+        "BG:cN:B", "BN:cG:B",
+      }).empty()
+    )
+    && !G_dominant
+    ) {
+    types.insert("06.1.2 GN works as G. Punishment by N is not justified. NB:dB, GG:cG, GB:cN");
+  }
+  if (
+    (
+      Match(g, {
+        "GG:cN:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
+        "GB:d[GN]", "NB:dB:B",
+        "BG:cG:B", "BN:c[GN]:B",
+      }).empty()
+    )
+    && !G_dominant
+    ) {
+    types.insert("06.2.1 GN works as G. Punishment by N is not justified. NB:dB, GG:cN, BG:cG");
+  }
+  if (
+    (
+      Match(g, {
+        "GG:cN:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
+        "GB:d[GN]", "NB:dB:B",
+        "BG:cN:B", "BN:c[GN]:B",
+      }).empty()
+    )
+    && !G_dominant
+    ) {
+    types.insert("06.2.2 GN works as G. Punishment by N is not justified. NB:dB, GG:cN, BG:cN");
   }
   // type-7: G and N works as G for the leading eight, but B players cooperate only with either G or N
   //      punishment by N against B may not always be justified
@@ -621,6 +657,18 @@ void PrintHHisto(const std::array<HistoNormalBin,3>& h_histo) {
   }
 }
 
+std::string ExtractKeyFromType(const std::string& type) {
+  std::regex re(R"(^[\d\.]+)");
+  std::smatch m;
+  if (std::regex_search(type, m, re) ) {
+    return m[0].str();
+  }
+  else {
+    std::cerr << "invalid type" << std::endl;
+    throw std::runtime_error("failed to extract key from type");
+  }
+}
+
 int main(int argc, char* argv[]) {
 
   if (argc != 2) {
@@ -671,14 +719,14 @@ int main(int argc, char* argv[]) {
   };
 
   int num_threads;
-  #pragma omp parallel shared(num_threads)
+  #pragma omp parallel shared(num_threads) default(none)
   { num_threads = omp_get_num_threads(); };
 
   std::cerr << "num_threads: " << num_threads << std::endl;
 
   std::vector<Output> outs(num_threads);
 
-  #pragma omp parallel for shared(inputs,outs)
+  #pragma omp parallel for shared(inputs,outs) default(none)
   for (size_t i = 0; i < inputs.size(); i++) {
     uint64_t gid = std::get<0>(inputs[i]);
     double c_prob = std::get<1>(inputs[i]), h0 = std::get<2>(inputs[i]), h1 = std::get<3>(inputs[i]), h2 = std::get<4>(inputs[i]);
@@ -715,6 +763,17 @@ int main(int argc, char* argv[]) {
     // PrintHistogramRepDynamics(kv.second);
     // PrintHistogramActionRules(kv.second);
     PrintHHisto(out.GetOrInit(kv.first));
+
+    const size_t OUT_SIZE_TH = 1000;
+    if (kv.second.size() < OUT_SIZE_TH) {
+      std::string key = ExtractKeyFromType(kv.first);
+      std::ofstream fout(std::string("DP_") + key);
+      for (auto gid : kv.second) {
+        Game g(0.02, 0.02, gid);
+        fout << g.Inspect();
+      }
+      fout.close();
+    }
   }
 
   return 0;
