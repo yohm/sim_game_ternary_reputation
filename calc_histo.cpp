@@ -316,7 +316,7 @@ std::string ClassifyType(Game& g) {
     (
       Match(g, {
         "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
-        "GB:d[GN]", "NB:dB",
+        "GB:d[GN]", "NB:dB:B",
         "BG:c[GN]:B", "BN:c[GN]:B",
       }).empty()
     )
@@ -330,7 +330,7 @@ std::string ClassifyType(Game& g) {
       Match(g, {
         "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
         "GB:d[GN]", "NB:d[GN]",
-        "BG:c[GN]:B", "BN:dB",
+        "BG:c[GN]:B", "BN:dB:B",
       }).empty()
       && !G_dominant
     ) {
@@ -340,7 +340,7 @@ std::string ClassifyType(Game& g) {
     Match(g, {
       "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
       "GB:d[GN]", "NB:d[GN]",
-      "BN:c[GN]:B", "BG:dB",
+      "BN:c[GN]:B", "BG:dB:B",
     }).empty()
     && !G_dominant
     ) {
@@ -348,34 +348,34 @@ std::string ClassifyType(Game& g) {
   }
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
-      "GB:d[GN]", "NB:dB",
-      "BG:c[GN]:B", "BN:dB",
+      "GG:cG:B", "GN:cN:B", "NG:cG:B", "NN:cN:B",
+      "GB:dG", "NB:dB:B",
+      "BG:cG:B", "BN:dB:B",
     }).empty()
     && !G_dominant
     ) {
     types.insert("07.2.1 GN works as G. B defects against N. Punishment by N is not justified. BN:dB, NB:dB");
   }
-  if (
-    Match(g, {
-        "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B",
-        "GB:d[GN]", "NB:dB",
-        "BN:c[GN]:B", "BG:dB",
-      }).empty()
-      && !G_dominant
-    ) {
-    types.insert("07.2.2 GN works as G. B defects against G. Punishment by N is not justified. BG:dB, NB:dB");
-  }
   // type-8: G and N works as G for the leading eight, but N-N defects each other
   if (
     Match(g, {
-      "GG:c[GN]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:d[GN]",
-      "GB:d[GN]", "NB:d[GN]",
-      "BG:c[GN]:B", "BN:c[GN]:B",
+      "GG:cG:B", "GN:cN:B", "NG:cG:B", "NN:dN",
+      "GB:dG", "NB:dG",
+      "BG:cG:B", "BN:c[GN]:B",
     }).empty()
     && !G_dominant
     ) {
-    types.insert("08. GN works as G but NN defects. NN:d[GN]");
+    types.insert("08.1. GN works as G but NN defects. NN:d[GN], NB:dG");
+  }
+  if (
+    Match(g, {
+      "GG:cG:B", "GN:cN:B", "NG:cG:B", "NN:dN",
+      "GB:dG", "NB:dN",
+      "BG:cG:B", "BN:c[GN]:B",
+    }).empty()
+    && !G_dominant
+    ) {
+    types.insert("08.2. GN works as G but NN defects. NN:d[GN], NB:dN");
   }
   // type-9: G and N works as G for the leading eight, but N-N defects each other
   //         B cooperates with G but defects against N (similar to type 8 but differ in `BN`)
@@ -388,7 +388,7 @@ std::string ClassifyType(Game& g) {
     }).empty()
     && !G_dominant
     ) {
-    types.insert("09-1. GN works as G but NN defects. B defects against N. NN:d[GN], BN:d*, NB:dG");
+    types.insert("09.1. GN works as G but NN defects. B defects against N. NN:d[GN], BN:d*, NB:dG");
   }
   if (
     Match(g, {
@@ -398,7 +398,7 @@ std::string ClassifyType(Game& g) {
     }).empty()
     && !G_dominant
     ) {
-    types.insert("09-2. GN works as G but NN defects. B defects against N. NN:d[GN], BN:d*, NB:dN");
+    types.insert("09.2. GN works as G but NN defects. B defects against N. NN:d[GN], BN:d*, NB:dN");
   }
   // type-10: G and N works as G for the leading eight, but N-N defects each other
   //          punishment of N against B causes a Bad reputation
