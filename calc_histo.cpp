@@ -275,31 +275,33 @@ std::string ClassifyType(Game& g) {
     types.insert("04.1.2 punisher becomes N. B recovers via being N. GB:dN->NG:dG, BG:cN->NG:dG");
   }
   if (
-    Match(g, {"GG:cG:B", "GB:dN", "BG:cN", "NG:cN", "NN:dG"}).empty()
+    Match(g, {
+      "GG:cG:B", "GB:dN", "BG:cN:B", "NG:cN:B", "NN:dG",
+      "GN:cG:B", "NB:d*", "BN:**:B"
+    }).empty()
     && G_dominant
     ) {
     types.insert("04.2.1 punisher becomes N. B recovers via being N. GB:dN->NN:dG, BG:cN->NN:dG");
   }
   if (
-    Match(g, {"GG:cG:B", "GB:dN", "BG:cN", "NG:cN", "NN:cG"}).empty()
+    Match(g, {
+      "GG:cG:B", "GB:dN", "BG:cN", "NG:cN:B", "NN:cG:B",
+      "GN:cG:B", "NB:d*", "BN:**:B"
+    }).empty()
     && G_dominant
     ) {
     types.insert("04.2.2 punisher becomes N. B recovers via being N. GB:dN->NN:cG, BG:cN->NN:cG");
   }
   // type-3-6: punisher has B reputation. Bad players recover G via being N.
   if (
-    Match(g, {"GG:cG:B", "GB:dB", "BG:cN", "NG:cG"}).empty()
+    Match(g, {
+      "GG:cG:B", "GB:dB:B", "BG:cN:B", "NG:cG:B",
+      "GN:cN:B", "NG:cG:B", "NN:cG:B", "BN:c[NG]:B"
+    }).empty()
     && G_dominant
     ) {
     types.insert("04.3.1 punisher becomes B. B recovers via being N. GB:dB->BG:cN->NG:cG");
   }
-  if (
-    Match(g, {"GG:cG:B", "GB:dB", "BG:cN", "NG:dG"}).empty()
-    && G_dominant
-    ) {
-    types.insert("04.3.2 punisher becomes B. B recovers via being N. GB:dB->BG:cN->NG:dG");
-  }
-
   // type-5: G and N works as G for the leading eight
   if (
     Match(g, {
