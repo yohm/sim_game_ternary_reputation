@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <array>
 #include <tuple>
@@ -117,8 +118,29 @@ void test_ReputationFlow() {
   }
 }
 
+void CalcDs(uint64_t gid, const std::string& fname) {
+  ReputationFlow rf = GetRepFlow(gid);
+
+  std::ifstream fin(fname);
+  std::vector<uint64_t> inputs;
+
+  while(fin) {
+    uint64_t org_gid,gid2;
+    double c_prob,h0,h1,h2;
+    fin >> org_gid >> gid2 >> c_prob >> h0 >> h1 >> h2;
+    ReputationFlow other = GetRepFlow(gid2);
+    std::cout << rf.D1(other) << ' ' << std::sqrt(rf.D2(other)) << std::endl;
+  }
+}
+
 int main(int argc, char* argv[]) {
-  test_ReputationFlow();
+  // test_ReputationFlow();
+
+  if (argc != 3) {
+    std::cerr << "Usage: " << argv[0] << " <base_gid> <fname>" << std::endl;
+    throw std::runtime_error("invalid usage");
+  }
+  CalcDs(std::stoull(argv[1]), argv[2]);
 
   return 0;
 }
