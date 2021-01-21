@@ -20,6 +20,8 @@ target_link_libraries(recalculate_game_ids.out PRIVATE OpenMP::OpenMP_CXX)
 add_executable(calc_histo.out calc_histo.cpp ${SOURCE_FILES})
 target_link_libraries(calc_histo.out PRIVATE OpenMP::OpenMP_CXX)
 
+add_executable(calc_flow.out calc_flow.cpp ${SOURCE_FILES})
+
 add_executable(print_normalized_RD.out print_normalized_RD.cpp ReputationDynamics.hpp)
 
 add_executable(test_ReputationDynamics.out test_ReputationDynamics.cpp ReputationDynamics.hpp)
