@@ -56,6 +56,22 @@ class ReputationFlow {
     return ss.str();
   }
 
+  double D1(const ReputationFlow& other) const {
+    double ans = 0.0;
+    for (int i = 0; i < 18; i++) {
+      ans += std::abs(w[i] - other.w[i]);
+    }
+    return ans;
+  }
+
+  double D2(const ReputationFlow& other) const {
+    double ans = 0.0;
+    for (int i = 0; i < 18; i++) {
+      ans += (w[i] - other.w[i]) * (w[i] - other.w[i]);
+    }
+    return ans;
+  }
+
   private:
   std::array<double,18> w;
   size_t Idx(Reputation donor, Reputation recip, Action act) const { // return index for (X,Y,a)
@@ -67,29 +83,42 @@ class ReputationFlow {
   }
 };
 
-Game& Type1() {
-  // GGC => G, GBC => *, BGC => G, BBC => *
-  // GGD => B, GBD => G, BGD => B, BBD => *
-  // action rule: GG => C, GB => D, BG => C, BB => **
-  ReputationDynamics l1({
-                          Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::G,
-                          Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::B, Reputation::G,
-                          Reputation::G, Reputation::B, Reputation::G, Reputation::B, Reputation::B, Reputation::G
-                        });
-  ActionRule ar1({
-                   Action::D, Action::D, Action::C,
-                   Action::D, Action::D, Action::C,
-                   Action::D, Action::D, Action::C
-                 });
-  Game g(0.02, 0.02, l1, ar1);
-  return g;
+ReputationFlow GetRepFlow(uint64_t gid) {
+  const double mu_e = 0.02, mu_a = 0.02;
+  Game g(mu_e, mu_a, gid);
+  return ReputationFlow(g);
+}
+
+void test_ReputationFlow() {
+  {
+    Game g(0.02, 0.02, 137863130404);  // leading-eight like strategy
+    ReputationFlow rf(g);
+    std::cout << g.Inspect() << rf.Inspect();
+  }
+
+  {
+    Game g(0.02, 0.02, 140323977652);  // type 13
+    ReputationFlow rf(g);
+    std::cout << g.Inspect() << rf.Inspect();
+  }
+
+  {
+    ReputationFlow rf1 = GetRepFlow(137863130404), rf2 = GetRepFlow(140323977652);
+    std::cout << "D: " << rf1.D1(rf2) << ' ' << std::sqrt(rf1.D2(rf2)) << std::endl;
+  }
+
+  {
+    std::vector<uint64_t> gids = {140322844084, 141139137460, 140325083572, 141140271028, 141956564404, 73671208375};
+    ReputationFlow rf = GetRepFlow(140323977652);
+    for (auto gid: gids) {
+      ReputationFlow other = GetRepFlow(gid);
+      std::cout << "D: " << rf.D1(other) << ' ' << std::sqrt(rf.D2(other)) << std::endl;
+    }
+  }
 }
 
 int main(int argc, char* argv[]) {
-
-  Game g = Type1();
-  ReputationFlow rf(g);
-  std::cout << g.Inspect() << rf.Inspect();
+  test_ReputationFlow();
 
   return 0;
 }
