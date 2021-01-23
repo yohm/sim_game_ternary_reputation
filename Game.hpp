@@ -66,7 +66,15 @@ class Game {
     return true;
   }
   v3d_t ResidentEqReputation() { CalcHStarResident(); return resident_h_star; } // equilibrium reputation of resident species
+  v3d_t ResidentEqReputation() const {
+    if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
+    return resident_h_star;
+  }
   double ResidentCoopProb() { CalcHStarResident(); return resident_coop_prob; } // cooperation probability between resident species without implementation error
+  double ResidentCoopProb() const {
+    if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
+    return resident_coop_prob;
+  }
   v3d_t HStarMutant(const ActionRule& mutant_action_rule) {
     CalcHStarResident();
     std::function<std::array<double,3>(std::array<double,3>)> func = [this,&mutant_action_rule](std::array<double,3> x) {

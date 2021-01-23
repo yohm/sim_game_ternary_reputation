@@ -13,7 +13,7 @@ class ReputationFlow {
   // calculate the flow of the players between reputations
   // we consider a multi-graph whose nodes are {B,N,G} and edges are {XY[cd]} where X,Y are reputations.
 
-  ReputationFlow(Game& g) {
+  ReputationFlow(const Game& g) {
     for (size_t i = 0; i < w.size(); i++) { w[i] = 0.0; }
 
     // w_{XYc} = \sum_{Z : D_{XZc}=Y}  h_x h_z (1-e)P_{xz}
@@ -45,12 +45,30 @@ class ReputationFlow {
   }
   const std::array<double,18>& GetAll() const { return w; }
 
-  std::string Inspect() {
+  std::string Inspect(bool simple = true) {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(4);
+    // calc major flow
+    ss << "--- MAJOR FLOW ---" << std::endl;
+    std::array< std::pair<double,size_t>, 18> flow_idx;
     for (size_t i = 0; i < 18; i++) {
-      ss << RepString(i)  << ": " << std::setw(6) << w[i];
-      ss << ((i % 6 == 5) ? "\n" : "\t");
+      flow_idx[i] = std::make_pair(w[i], i);
+    }
+    std::sort(flow_idx.begin(), flow_idx.end());
+    std::reverse(flow_idx.begin(), flow_idx.end());
+    for (auto f_idx: flow_idx) {
+      if (f_idx.first < 0.01) break;
+      ss << RepString(f_idx.second) << ": " << std::setw(6) << f_idx.first << "   ";
+    }
+    ss << std::endl;
+
+    if (!simple) {
+      ss << "--- DETAIL ---\n";
+
+      for (size_t i = 0; i < 18; i++) {
+        ss << RepString(i) << ": " << std::setw(6) << w[i];
+        ss << ((i % 6 == 5) ? "\n" : "   ");
+      }
     }
     return ss.str();
   }
@@ -103,6 +121,7 @@ class ReputationFlow {
 ReputationFlow GetRepFlow(uint64_t gid) {
   const double mu_e = 0.02, mu_a = 0.02;
   Game g(mu_e, mu_a, gid);
+  g.ResidentEqReputation();
   return ReputationFlow(g);
 }
 
@@ -199,11 +218,17 @@ void CalcDs(uint64_t gid, const std::string& fname) {
 int main(int argc, char* argv[]) {
   // test_ReputationFlow();
 
-  if (argc != 3) {
-    std::cerr << "Usage: " << argv[0] << " <base_gid> <fname>" << std::endl;
+  if (argc == 3) {
+    CalcDs(std::stoull(argv[1]), argv[2]);
+  }
+  else if (argc == 2) {
+    ReputationFlow rf = GetRepFlow(std::stoull(argv[1]));
+    std::cerr << rf.Inspect();
+  }
+  else {
+    std::cerr << "Usage: " << argv[0] << " <base_gid> [fname]" << std::endl;
     throw std::runtime_error("invalid usage");
   }
-  CalcDs(std::stoull(argv[1]), argv[2]);
 
   return 0;
 }
