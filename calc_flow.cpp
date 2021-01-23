@@ -146,6 +146,11 @@ void CalcDs(uint64_t gid, const std::string& fname) {
     ReputationFlow other = GetRepFlow(gid2);
     auto d_pair = rf.MaxD(other);
     std::cout << gid2 << ' ' << d_pair.first << ' ' << rf.RepString(d_pair.second) << ' ' << rf.D1(other) << ' ' << std::sqrt(rf.D2(other)) << std::endl;
+    if (d_pair.first > 0.04) {
+      Game g(0.02, 0.02, gid), g2(0.02, 0.02, gid2);
+      std::cout << g.Inspect() << g2.Inspect();
+      break;
+    }
   }
 }
 
