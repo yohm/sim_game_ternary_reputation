@@ -48,13 +48,28 @@ class ReputationFlow {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(4);
     for (size_t i = 0; i < 18; i++) {
-      const auto tup = ToReps(i);
-      Reputation X = std::get<0>(tup), Y = std::get<1>(tup);
-      Action a = std::get<2>(tup);
-      ss << "(" << X << "-" << a << "-" << Y << "): " << std::setw(6) << w[i];
+      ss << RepString(i)  << ": " << std::setw(6) << w[i];
       ss << ((i % 6 == 5) ? "\n" : "\t");
     }
     return ss.str();
+  }
+  std::string RepString(size_t i) const {
+    std::stringstream ss;
+    const auto tup = ToReps(i);
+    Reputation X = std::get<0>(tup), Y = std::get<1>(tup);
+    Action a = std::get<2>(tup);
+    ss << "(" << X << "-" << a << "-" << Y << ")";
+    return ss.str();
+  }
+
+  std::pair<double,size_t> MaxD(const ReputationFlow& other) const {
+    double ans = 0.0;
+    size_t idx = 0;
+    for (size_t i = 0; i < 18; i++) {
+      double d = std::abs(w[i] - other.w[i]);
+      if (d > ans) { ans = d; idx = i; }
+    }
+    return std::make_pair(ans, idx);
   }
 
   double D1(const ReputationFlow& other) const {
@@ -129,7 +144,8 @@ void CalcDs(uint64_t gid, const std::string& fname) {
     double c_prob,h0,h1,h2;
     fin >> org_gid >> gid2 >> c_prob >> h0 >> h1 >> h2;
     ReputationFlow other = GetRepFlow(gid2);
-    std::cout << rf.D1(other) << ' ' << std::sqrt(rf.D2(other)) << std::endl;
+    auto d_pair = rf.MaxD(other);
+    std::cout << gid2 << ' ' << d_pair.first << ' ' << rf.RepString(d_pair.second) << ' ' << rf.D1(other) << ' ' << std::sqrt(rf.D2(other)) << std::endl;
   }
 }
 
