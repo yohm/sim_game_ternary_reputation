@@ -6,6 +6,7 @@
 #include <iomanip>
 
 #include "Game.hpp"
+#include "HistoNormalBin.hpp"
 
 class ReputationFlow {
   public:
@@ -133,11 +134,26 @@ void test_ReputationFlow() {
   }
 }
 
+template <typename ... Args>
+std::string format(const std::string& fmt, Args ... args )
+{
+  size_t len = std::snprintf( nullptr, 0, fmt.c_str(), args ... );
+  std::vector<char> buf(len + 1);
+  std::snprintf(&buf[0], len + 1, fmt.c_str(), args ... );
+  return std::string(&buf[0], &buf[0] + len);
+}
+
 void CalcDs(uint64_t gid, const std::string& fname) {
   ReputationFlow rf = GetRepFlow(gid);
 
   std::ifstream fin(fname);
   std::vector<uint64_t> inputs;
+
+  HistoNormalBin histo0(0.002); //, histo1(0.01), histo2(0.01);
+  // std::string fname1 = format("TYPE_%lld", gid);
+  // std::string fname2 = format("TYPE_N_%lld", gid);
+  // std::ofstream fout1(fname1), fout2(fname2);
+  constexpr double th_d = 0.03;
 
   while(fin) {
     uint64_t org_gid,gid2;
@@ -145,13 +161,39 @@ void CalcDs(uint64_t gid, const std::string& fname) {
     fin >> org_gid >> gid2 >> c_prob >> h0 >> h1 >> h2;
     ReputationFlow other = GetRepFlow(gid2);
     auto d_pair = rf.MaxD(other);
-    std::cout << gid2 << ' ' << d_pair.first << ' ' << rf.RepString(d_pair.second) << ' ' << rf.D1(other) << ' ' << std::sqrt(rf.D2(other)) << std::endl;
-    if (d_pair.first > 0.04) {
+    /*
+    if (d_pair.first < th_d) {
+      fout1 << org_gid << ' ' << gid2 << ' ' << c_prob << ' ' << h0 << ' ' << h1 << ' ' << h2 << ' ' << std::endl;
+    }
+    else {
+      fout2 << org_gid << ' ' << gid2 << ' ' << c_prob << ' ' << h0 << ' ' << h1 << ' ' << h2 << ' ' << std::endl;
+    }
+     */
+    histo0.Add(d_pair.first);
+    /*
+    if (d_pair.first > 0.03 && d_pair.first < 0.04) {
       Game g(0.02, 0.02, gid), g2(0.02, 0.02, gid2);
+      std::cout << d_pair.first << ' ' << rf.RepString(d_pair.second) << std::endl;
       std::cout << g.Inspect() << g2.Inspect();
       break;
     }
+     */
   }
+
+  std::cout << "======== D0 histo:" << std::endl;
+  for (const auto &keyval : histo0.Frequency()) {
+    std::cout << keyval.first << ' ' << keyval.second << std::endl;
+  }
+  /*
+  std::cout << "======== D1 histo:" << std::endl;
+  for (const auto &keyval : histo1.Frequency()) {
+    std::cout << keyval.first << ' ' << keyval.second << std::endl;
+  }
+  std::cout << "======== D2 histo:" << std::endl;
+  for (const auto &keyval : histo2.Frequency()) {
+    std::cout << keyval.first << ' ' << keyval.second << std::endl;
+  }
+   */
 }
 
 int main(int argc, char* argv[]) {
