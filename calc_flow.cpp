@@ -16,25 +16,37 @@ class ReputationFlow {
   ReputationFlow(const Game& g) {
     for (size_t i = 0; i < w.size(); i++) { w[i] = 0.0; }
 
-    // w_{XYc} = \sum_{Z : D_{XZc}=Y}  h_x h_z (1-e)P_{xz}
-    // w_{XYd} = \sum_{Z : D_{XZd}=Y}  h_x h_z {P_{xz}*e + (1-P_{xz})}
-    //         = \sum_{Z : D_{XZd}=Y}  h_x h_z {1 - (1-e)P_{xz}}
-
     std::array<double,3> h_star = g.ResidentEqReputation();
 
     for (int i = 0; i < 3; i++) {
       Reputation X = static_cast<Reputation>(i);
       for (int j = 0; j < 3; j++) {
-        Reputation Z = static_cast<Reputation>(j);
-        if (g.resident_ar.ActAt(X,Z) == Action::C) {
-          const Reputation Y1 = g.rep_dynamics.RepAt(X, Z, Action::C);
-          w[Idx(X,Y1,Action::C)] += h_star[i] * h_star[j] * (1.0-g.mu_e);
-          const Reputation Y2 = g.rep_dynamics.RepAt(X, Z, Action::D);
-          w[Idx(X,Y2,Action::D)] += h_star[i] * h_star[j] * (g.mu_e);
-        }
-        else {
-          Reputation Y = g.rep_dynamics.RepAt(X, Z, Action::D);
-          w[Idx(X,Y,Action::D)] += h_star[i] * h_star[j];
+        Reputation Y = static_cast<Reputation>(j);
+        Action act = g.resident_ar.ActAt(X,Y);
+        for (int k = 0; k < 3; k++) {
+          Reputation Z = static_cast<Reputation>(k);
+          if (act == Action::C) {
+            if (g.rep_dynamics.RepAt(X,Y,Action::C) == Z) {
+              w[Idx(X,Z,Action::C)] += h_star[i] * h_star[j] * (1.0-g.mu_e) * (1.0-g.mu_a);
+            }
+            else {
+              w[Idx(X,Z,Action::C)] += h_star[i] * h_star[j] * (1.0-g.mu_e) * 0.5 * g.mu_a;
+            }
+            if (g.rep_dynamics.RepAt(X,Y,Action::D) == Z) {
+              w[Idx(X,Z,Action::D)] += h_star[i] * h_star[j] * g.mu_e * (1.0-g.mu_a);
+            }
+            else {
+              w[Idx(X,Z,Action::D)] += h_star[i] * h_star[j] * g.mu_e * 0.5 * g.mu_a;
+            }
+          }
+          else {  // act == Action::D
+            if (g.rep_dynamics.RepAt(X,Y,Action::D) == Z) {
+              w[Idx(X,Z,Action::D)] += h_star[i] * h_star[j] * (1.0-g.mu_a);
+            }
+            else {
+              w[Idx(X,Z,Action::D)] += h_star[i] * h_star[j] * 0.5 * g.mu_a;
+            }
+          }
         }
       }
     }
