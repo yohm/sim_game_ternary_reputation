@@ -5,6 +5,7 @@
 #include <sstream>
 #include <cmath>
 #include <functional>
+#include <iomanip>
 #include "ReputationDynamics.hpp"
 
 
@@ -22,9 +23,9 @@ class Game {
     resident_h_star = h_star;
     resident_h_star_ready = true;
   }
-  std::string Inspect() {
+  std::string Inspect() const {
     std::stringstream ss;
-    auto h = ResidentEqReputation();
+    const auto& h = resident_h_star;
     ss << "GameID: " << ID() << std::endl
        << "(mu_e, mu_a): (" << mu_e << ", " << mu_a << ")" << std::endl
        << "(RD_id, AR_id): (" << rep_dynamics.ID() << ", " << resident_ar.ID() << ")" << std::endl
@@ -36,7 +37,33 @@ class Game {
       ss << "(" << X << "->" << Y << "): " << std::get<0>(p) << std::get<1>(p) << ':' << std::get<2>(p);
       ss << ((i % 3 == 2) ? "\n" : "\t");
     }
-    ss << "(c_porb,h0,h1,h2): " << ResidentCoopProb() << ' ' << h[0] << ' ' << h[1] << ' ' << h[2] << std::endl;
+    ss << "(c_prob,h0,h1,h2): " << ResidentCoopProb() << ' ' << h[0] << ' ' << h[1] << ' ' << h[2] << std::endl;
+    return ss.str();
+  }
+  std::string Inspect() {
+    ResidentEqReputation();
+    const Game* pg = this;
+    return pg->Inspect();
+  }
+  std::string InspectMD() const {
+    std::stringstream ss;
+    ss << "- GameID: " << ID() << "\n"
+       << "  - RD_id, AR_id: " << rep_dynamics.ID() << ", " << resident_ar.ID() << "\n"
+       << "- Prescription:\n\n"
+       << "  | | | |\n"
+       << "  |-|-|-|\n";
+    for (int i = 0; i < 9; i++) {
+      Reputation X = static_cast<Reputation>(i/3);
+      Reputation Y = static_cast<Reputation>(i%3);
+      auto p = At(X, Y);
+      ss << "  | (" << X << "->" << Y << "): " << std::get<0>(p) << std::get<1>(p) << ':' << std::get<2>(p) << " ";
+      ss << ((i % 3 == 2) ? " |\n" : "");
+    }
+    ss << "\n" << std::fixed << std::setprecision(2);
+    ss << "- c_prob: " << ResidentCoopProb() << "\n"
+       << "  - h_B: " << resident_h_star[0] << "\n"
+       << "  - h_N: " << resident_h_star[1] << "\n"
+       << "  - h_G: " << resident_h_star[2] << "\n";
     return ss.str();
   }
   uint64_t ID() const {

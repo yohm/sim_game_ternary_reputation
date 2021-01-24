@@ -12,7 +12,9 @@ int main(int argc, char *argv[]) {
     for (size_t i = 1; i < argc; i++) {
        uint64_t id = std::stoull(argv[i]);
        Game g(0.02, 0.02, id);
+       g.ResidentEqReputation();
        std::cout << g.Inspect() << std::endl;
+       std::cout << g.InspectMD() << std::endl;
     }
     return 0;
   }
@@ -29,6 +31,7 @@ int main(int argc, char *argv[]) {
                    Action::D, Action::D, Action::C
                  });
     Game g(0.02, 0.02, rd, ar);
+    g.ResidentEqReputation();
     std::cout << g.Inspect();
     assert(g.ID() == 166243799309);
 
