@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cassert>
 #include "Game.hpp"
+#include "PopulationFlow.hpp"
 
 
 bool Close(double d1, double d2, double tolerance = 1.0e-2) {
@@ -13,8 +14,9 @@ int main(int argc, char *argv[]) {
        uint64_t id = std::stoull(argv[i]);
        Game g(0.02, 0.02, id);
        g.ResidentEqReputation();
-       std::cout << g.Inspect() << std::endl;
        std::cout << g.InspectMD() << std::endl;
+       PopulationFlow pf(g);
+       std::cout << pf.Inspect();
     }
     return 0;
   }

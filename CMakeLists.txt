@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 14)
 find_package(OpenMP REQUIRED)
 find_package(MPI REQUIRED)
 
-set(SOURCE_FILES ReputationDynamics.hpp Game.hpp)
+set(SOURCE_FILES ReputationDynamics.hpp Game.hpp PopulationFlow.hpp)
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 add_executable(main.out main.cpp ${SOURCE_FILES})

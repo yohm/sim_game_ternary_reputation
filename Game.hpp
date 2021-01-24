@@ -8,7 +8,6 @@
 #include <iomanip>
 #include "ReputationDynamics.hpp"
 
-
 class Game {
   public:
   using v3d_t = std::array<double,3>;
