@@ -48,7 +48,7 @@ class Game {
     std::stringstream ss;
     ss << "- GameID: " << ID() << "\n"
        << "  - RD_id, AR_id: " << rep_dynamics.ID() << ", " << resident_ar.ID() << "\n"
-       << "- Prescription:\n\n"
+       << "- Prescriptions:\n\n"
        << "  | | | |\n"
        << "  |-|-|-|\n";
     for (int i = 0; i < 9; i++) {
@@ -59,7 +59,8 @@ class Game {
       ss << ((i % 3 == 2) ? " |\n" : "");
     }
     ss << "\n" << std::fixed << std::setprecision(2);
-    ss << "- c_prob: " << ResidentCoopProb() << "\n"
+    ss << "- Cooperation Probability: " << ResidentCoopProb() << "\n"
+       << "- Population:" << "\n"
        << "  - h_B: " << resident_h_star[0] << "\n"
        << "  - h_N: " << resident_h_star[1] << "\n"
        << "  - h_G: " << resident_h_star[2] << "\n";

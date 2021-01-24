@@ -81,6 +81,24 @@ class PopulationFlow {
     }
     return ss.str();
   }
+  std::string InspectMD() const {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(3);
+    // calc major flow
+    ss << "- Major Population Flow:" << std::endl;
+    std::array<std::pair<double, size_t>, 18> flow_idx;
+    for (size_t i = 0; i < 18; i++) {
+      flow_idx[i] = std::make_pair(w[i], i);
+    }
+    std::sort(flow_idx.begin(), flow_idx.end());
+    std::reverse(flow_idx.begin(), flow_idx.end());
+    for (auto f_idx: flow_idx) {
+      if (f_idx.first < 0.01) break;
+      ss << "  - " << RepString(f_idx.second) << ": " << f_idx.first << "\n";
+    }
+    ss << std::endl;
+    return ss.str();
+  }
   std::string RepString(size_t i) const {
     std::stringstream ss;
     const auto tup = ToReps(i);

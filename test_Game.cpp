@@ -14,9 +14,9 @@ int main(int argc, char *argv[]) {
        uint64_t id = std::stoull(argv[i]);
        Game g(0.02, 0.02, id);
        g.ResidentEqReputation();
-       std::cout << g.InspectMD() << std::endl;
+       std::cout << g.InspectMD();
        PopulationFlow pf(g);
-       std::cout << pf.Inspect();
+       std::cout << pf.InspectMD();
     }
     return 0;
   }
