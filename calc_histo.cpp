@@ -717,14 +717,15 @@ int main(int argc, char* argv[]) {
     PrintHHisto(histo_map.at(kv.first));
 
     const size_t OUT_SIZE_TH = 1000;
-    if (kv.second.size() < OUT_SIZE_TH) {
-      std::string key = ExtractKeyFromType(kv.first);
-      std::ofstream fout(std::string("DP_") + key);
-      for (const Input& input: kv.second) {
-        fout << input.gid << ' ' << input.gid << ' ' << input.c_prob << ' ' << input.h.at(0) << ' ' << input.h.at(1) << ' ' << input.h.at(2) << std::endl;
-      }
-      fout.close();
+    std::string key = ExtractKeyFromType(kv.first);
+    std::ofstream fout(std::string("DP_") + key);
+    size_t count = 0;
+    for (const Input& input: kv.second) {
+      fout << input.gid << ' ' << input.gid << ' ' << input.c_prob << ' ' << input.h.at(0) << ' ' << input.h.at(1) << ' ' << input.h.at(2) << std::endl;
+      count++;
+      if (count == OUT_SIZE_TH) break;
     }
+    fout.close();
   }
 
   return 0;

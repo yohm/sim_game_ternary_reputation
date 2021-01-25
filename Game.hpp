@@ -55,7 +55,7 @@ class Game {
       Reputation X = static_cast<Reputation>(i/3);
       Reputation Y = static_cast<Reputation>(i%3);
       auto p = At(X, Y);
-      ss << "  | (" << X << "->" << Y << "): " << std::get<0>(p) << std::get<1>(p) << ':' << std::get<2>(p) << " ";
+      ss << "  | (" << X << "->" << Y << ") " << std::get<0>(p) << std::get<1>(p) << ':' << std::get<2>(p) << " ";
       ss << ((i % 3 == 2) ? " |\n" : "");
     }
     ss << "\n" << std::fixed << std::setprecision(2);
