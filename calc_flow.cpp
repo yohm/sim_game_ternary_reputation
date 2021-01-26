@@ -4,6 +4,7 @@
 #include <array>
 #include <tuple>
 #include <iomanip>
+#include "omp.h"
 
 #include "Game.hpp"
 #include "PopulationFlow.hpp"
@@ -51,6 +52,90 @@ std::string format(const std::string& fmt, Args ... args )
   std::vector<char> buf(len + 1);
   std::snprintf(&buf[0], len + 1, fmt.c_str(), args ... );
   return std::string(&buf[0], &buf[0] + len);
+}
+
+void CalcClassifyByFlowOrder(const std::string& fname) {
+  std::ifstream fin(fname);
+  std::vector<uint64_t> gids;
+
+  while(fin) {
+    uint64_t org_gid, gid;
+    double c_prob, h0, h1, h2;
+    fin >> org_gid >> gid >> c_prob >> h0 >> h1 >> h2;
+    gids.push_back(gid);
+  }
+
+  std::map<std::string, std::vector<uint64_t>> output;
+
+  for (size_t i = 0; i < gids.size(); i++) {
+    if (i % 100'000 == 0) std::cerr << i << std::endl;
+    uint64_t gid = gids[i];
+    PopulationFlow pf = GetRepFlow(gid);
+    std::array<std::pair<double, size_t>, 18> flow_idx;
+    for (size_t i = 0; i < 18; i++) {
+      auto w = pf.GetAll();
+      flow_idx[i] = std::make_pair(w[i], i);
+    }
+    std::sort(flow_idx.begin(), flow_idx.end());
+    std::reverse(flow_idx.begin(), flow_idx.end());
+    std::string key = "";
+    for (auto f_idx: flow_idx) {
+      if (f_idx.first < 0.01) break;
+      key += pf.RepString(f_idx.second);
+    }
+    output[key].push_back(gid);
+  }
+
+  // print outputs
+  for (const auto& kv: output) {
+    std::cout << kv.first << ' ' << kv.second.size() << ' ';
+    size_t N = std::min(5ul, kv.second.size());
+    for (size_t i = 0; i < N; i++) {
+      std::cout << kv.second[i] << ',';
+    }
+    std::cout << "\n";
+  }
+}
+
+void CalcFlowSizeDistribution(const std::string& fname) {
+  std::ifstream fin(fname);
+  std::vector<uint64_t> inputs;
+
+  while(fin) {
+    uint64_t org_gid, gid;
+    double c_prob, h0, h1, h2;
+    fin >> org_gid >> gid >> c_prob >> h0 >> h1 >> h2;
+    inputs.push_back(gid);
+  }
+
+  int num_threads;
+  #pragma omp parallel shared(num_threads) default(none)
+  { num_threads = omp_get_num_threads(); };
+
+  constexpr double bin_size = 0.002;
+  std::vector<HistoNormalBin> histo_vec(num_threads, bin_size);
+  // HistoNormalBin histo(0.002); //, histo1(0.01), histo2(0.01);
+
+  std::cerr << inputs.size() << " records are loaded.\n";
+  #pragma omp parallel for shared(inputs,histo_vec,std::cerr) default(none)
+  for (size_t i = 0; i < inputs.size(); i++) {
+    if (i % 100'000 == 0) std::cerr << i << std::endl;
+    const uint64_t gid = inputs[i];
+    PopulationFlow pf = GetRepFlow(gid);
+    int th = omp_get_thread_num();
+    for (double w: pf.GetAll()) {
+      histo_vec[th].Add(w);
+    }
+  }
+
+  HistoNormalBin histo(bin_size);
+  for (const auto& h: histo_vec) {
+    histo.Merge(h);
+  }
+
+  for (const auto &keyval : histo.Frequency()) {
+    std::cout << keyval.first << ' ' << keyval.second << std::endl;
+  }
 }
 
 void CalcDs(uint64_t gid, const std::string& fname) {
@@ -113,11 +198,12 @@ int main(int argc, char* argv[]) {
     CalcDs(std::stoull(argv[1]), argv[2]);
   }
   else if (argc == 2) {
-    PopulationFlow rf = GetRepFlow(std::stoull(argv[1]));
-    std::cerr << rf.Inspect();
+    // CalcFlowSizeDistribution(argv[1]);
+    CalcClassifyByFlowOrder(argv[1]);
   }
   else {
-    std::cerr << "Usage: " << argv[0] << " <base_gid> [fname]" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <base_gid> <fname>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <fname>" << std::endl;
     throw std::runtime_error("invalid usage");
   }
 
