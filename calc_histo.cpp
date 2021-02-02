@@ -750,13 +750,13 @@ std::string ClassifyType2(Game& g) {
     classify_by_pusniment_pattern();
   }
   else if (
-    Match(g, {"GG:cG:B", "GN:*N", "NG:*N"}).empty()  // N more significant
+    Match(g, {"GG:cG:B", "GN:cN", "NG:cN"}).empty()  // N more significant
     )
   {
     key += "4.";
-    desc += "GG:cG:B, GN:*N NG:*N (N more significant)";
+    desc += "GG:cG:B GN:cN NG:cN (N more significant)";
 
-    classify_by_recovery_when_meeting_NG();
+    // classify_by_recovery_when_meeting_NG();
     // classify_by_pusniment_pattern();
   }
   else if (
@@ -764,7 +764,7 @@ std::string ClassifyType2(Game& g) {
     )
   {
     key += "5.";
-    desc += "GG:cN:B (GN)";
+    desc += "GG:cN:B (N more significant)";
 
     // classify_by_reputation_change_when_meeting_G();
     // classify_by_pusniment_pattern();
