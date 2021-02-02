@@ -9,6 +9,7 @@
 #include <cassert>
 #include <regex>
 #include <omp.h>
+#include <icecream.hpp>
 
 #include "ReputationDynamics.hpp"
 #include "Game.hpp"
@@ -558,6 +559,223 @@ std::string ClassifyType(Game& g) {
   return type;
 }
 
+std::string ClassifyType2(Game& g) {
+  const ReputationDynamics rd = g.rep_dynamics;
+  const ActionRule ar = g.resident_ar;
+
+  const Reputation B = Reputation::B, N = Reputation::N, G = Reputation::G;
+  const Action D = Action::D, C = Action::C;
+
+  // GGd => B
+  if (rd.RepAt(G, G, D) != B) {
+    throw std::runtime_error("must not happen");
+  }
+
+  std::string desc = "", key = "";
+
+  auto classify_by_reputation_change_when_meeting_G = [&g,&desc,&key]() {
+    // how B,N change reputation when meeting G
+    if (
+      Match(g, {"BG:cG", "NG:*G"}).empty()   // B->G<-N
+      )
+    {
+      key += "1.";
+      desc += ", BG:cG, NG:*G (B->G<-N)";
+    }
+    else if (
+      Match(g, {"BG:cG", "NG:*B"}).empty()  // N->B->G
+      )
+    {
+      key += "2.";
+      desc += ", BG:cG NG:*B (N->B->G)";
+    }
+    else if (
+      Match(g, {"BG:*N", "NG:*G"}).empty() // B->N->G
+      )
+    {
+      key += "3.";
+      desc += ", BG:*N NG:*G (B->N->G)";
+    }
+    else if (
+      Match(g, {"BG:cG", "NG:*N"}).empty() // B->G N
+      )
+    {
+      key += "4.";
+      desc += ", BG:cG NG:*N (B->G N)";
+    }
+    else if (
+      Match(g, {"BG:*N", "NG:*N"}).empty()  // B->N G
+      )
+    {
+      key += "5.";
+      desc += ", BG:*N NG:*N (B->N G)";
+    }
+    else if (
+      Match(g, {"BG:*B", "NG:*G"}).empty()  // B N->G
+      )
+    {
+      key += "6.";
+      desc += ", BG:*B NG:*G (B N->G)";
+    }
+    else if (
+      Match(g, {"BG:*B", "NG:*N"}).empty()  // B N G
+      )
+    {
+      key += "7.";
+      desc += ", BG:*B NG:*N (B N G)";
+    }
+    else {
+      key += "99.";
+    }
+  };
+
+  auto classify_by_pusniment_pattern = [&g,&desc,&key]() {
+    if (
+      Match(g, {"GB:dG"}).empty()
+      )
+    {
+      key += "1.";
+      desc += ", GB:dG";
+    }
+    else if (
+      Match(g, {"GB:dN"}).empty()
+      )
+    {
+      key += "2.";
+      desc += ", GB:dN";
+    }
+    else if (
+      Match(g, {"GB:dB"}).empty()
+      )
+    {
+      key += "3.";
+      desc += ", GB:dB";
+    }
+    else {
+      key += "99.";
+    }
+  };
+
+  auto classify_by_recovery_when_meeting_NG = [&g,&desc,&key]() {
+    // BN:*G, BG:*G
+    if (
+      Match(g, {"BN:*G", "BG:*G"}).empty()
+      )
+    {
+      key += "1.";
+      desc += ", (BN->G,BG->G)";
+    }
+    else if (
+      Match(g, {"BN:*N", "BG:*G"}).empty()
+      )
+    {
+      key += "2.";
+      desc += ", (BN->N,BG->G)";
+    }
+    else if (
+      Match(g, {"BN:*G", "BG:*N"}).empty()
+      )
+    {
+      key += "3.";
+      desc += ", (BN->G,BG->N)";
+    }
+    else if (
+      Match(g, {"BN:*N", "BG:*N"}).empty()
+      )
+    {
+      key += "4.";
+      desc += ", (BN->N,BG->N)";
+    }
+    else if (
+      Match(g, {"BN:*B", "BG:*[NG]"}).empty()
+      )
+    {
+      key += "5.";
+      desc += ", (BN->B,BG->[NG])";
+    }
+    else if (
+      Match(g, {"BN:*[NG]", "BG:*B"}).empty()
+      )
+    {
+      key += "6.";
+      desc += ", (BN->[NG],BG->B)";
+    }
+    else {
+      key += "99.";
+    }
+  };
+
+  // classify by GG:cG:B or GG:cN:B
+  if (
+    Match(g, {"GG:cG:B", "GN:*[BG]", "NG:*[BG]"}).empty()  // G is dominant
+    )
+  {
+    key += "1.";
+    desc += "GG:cG GN:*[BG] NG:*[BG] (G dominant)";
+
+    classify_by_reputation_change_when_meeting_G();
+    classify_by_pusniment_pattern();
+  }
+  else if (
+    Match(g, {"GG:cG:B", "GN:*[BG]", "NG:*N"}).empty()  // N significant
+    ) {
+    key += "2.";
+    desc += "GG:cG GN:*[BG] NG:*N (N significant)";
+
+    classify_by_reputation_change_when_meeting_G();
+    classify_by_pusniment_pattern();
+
+    /*
+    if (
+      Match(g, {"NN:*N", "NB:*N", "BN:*N"}).empty()
+      )
+    {
+      key += "1.";
+      desc += ", NN:*N NB:*N BN:*N (N stable)";
+    }
+    else {
+      key += "99.";
+      desc += ", otherwise";
+    }
+     */
+  }
+  else if (
+    Match(g, {"GG:cG:B", "GN:*N", "NG:*G"}).empty()  // N significant
+    )
+  {
+    key += "3.";
+    desc += "GG:cG:B, GN:*N NG:*G (N significant)";
+
+    classify_by_reputation_change_when_meeting_G();
+    classify_by_pusniment_pattern();
+  }
+  else if (
+    Match(g, {"GG:cG:B", "GN:*N", "NG:*N"}).empty()  // N more significant
+    )
+  {
+    key += "4.";
+    desc += "GG:cG:B, GN:*N NG:*N (N more significant)";
+
+    classify_by_recovery_when_meeting_NG();
+    // classify_by_pusniment_pattern();
+  }
+  else if (
+    Match(g, {"GG:cN:B"}).empty()
+    )
+  {
+    key += "5.";
+    desc += "GG:cN:B (GN)";
+
+    // classify_by_reputation_change_when_meeting_G();
+    // classify_by_pusniment_pattern();
+  }
+  else {
+    key += "99.";
+  }
+
+  return key + " " + desc;
+}
+
 struct Input {
   Input(uint64_t _gid, double _cprob, double h0, double h1, double h2) : gid(_gid), c_prob(_cprob), h({h0,h1,h2}) {};
   uint64_t gid;
@@ -694,7 +912,7 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < inputs.size(); i++) {
     const Input& input = inputs[i];
     Game g(0.02, 0.02, input.gid, input.c_prob, input.h);
-    std::string type = ClassifyType(g);
+    std::string type = ClassifyType2(g);
     int th = omp_get_thread_num();
     outs[th].map_type_inputs[type].emplace_back(input);
   }
