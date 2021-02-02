@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
   uint64_t total_count = 0ull, ess_count = 0ull;
   std::vector<uint64_t> ESS_ids;
 
-  #pragma omp parallel for shared(total_count,ess_count,ESS_ids) default(none) schedule(dynamic)
+  #pragma omp parallel for shared(total_count,ess_count,ESS_ids,repd_ids) default(none) schedule(dynamic)
   for (size_t i = 0; i <repd_ids.size(); i++) {
     int th = omp_get_thread_num();
     int num_threads = omp_get_num_threads();
