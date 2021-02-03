@@ -871,7 +871,7 @@ std::string ClassifyType3(Game& g) {
     }
   };
 
-  auto classify_by_panishment_pattern = [&g,&desc,&key]() {
+  auto classify_by_punishment_G = [&g,&desc,&key]() {
     if (
       Match(g, {"GB:dG"}).empty()
       )
@@ -898,6 +898,56 @@ std::string ClassifyType3(Game& g) {
     }
   };
 
+  auto classify_by_recovery_path_GN = [&g,&desc,&key]() {
+    // recovery path
+    if (
+      Match(g, {"BG:c[GN]:B", "BN:c[GN]:B"}).empty()
+      ) {
+      key += "1.";
+      desc += ", B[GN]:c[GN]:B (B cooperates G&N)";
+    } else if (
+      Match(g, {"BG:c[GN]:B", "BN:dB:B"}).empty() || Match(g, {"BG:dB:B", "BN:c[GN]:B"}).empty()
+      ) {
+      key += "2.";
+      desc += ", BN:c[GN] or BG:c[GN] (B cooperates either GorN, defectors remain B)";
+    } else if (
+      Match(g, {"BG:c[GN]:B", "BN:d[GN]"}).empty()
+      ) {
+      key += "3.";
+      desc += ", BN:c[GN] BN:d[GN] (B cooperates G, B may gain G when defecting N)";
+    } else {
+      key += "99.";
+      desc += ", unknown recovery pattern";
+    }
+  };
+
+  auto classify_by_punishment_GN = [&g,&desc,&key]() {  // for type2, classify of punisher
+    if (
+      Match(g, {"GB:d[GN]", "NB:d[GN]"}).empty()
+      )
+    {
+      key += "1.";
+      desc += ", GB:d[GN] NB:d[GN] (both GN punishers are justified)";
+    }
+    else if (
+      Match(g, {"GB:d[GN]", "NB:dB"}).empty()
+      )
+    {
+      key += "2.";
+      desc += ", GB:d[NG] NB:dB (N pusniher is not justified)";
+    }
+    else if (
+      Match(g, {"GB:dB", "NB:d[GN]"}).empty()
+      )
+    {
+      key += "3.";
+      desc += ", GB:dB, NB:d[GN] (G punisher is not justified)";
+    }
+    else {
+      key += "99.";
+    }
+  };
+
   const std::array<double,3> H = g.ResidentEqReputation();
 
   // classify by GG:cG:B or GG:cN:B
@@ -909,54 +959,28 @@ std::string ClassifyType3(Game& g) {
     desc += "GG:cG h_N<0.1 (G dominant)";
 
     classify_by_reputation_change_when_meeting_G();
-    classify_by_panishment_pattern();
+    classify_by_punishment_G();
   }
   else if (
-    Match(g, {"GG:c[NG]:B", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]"}).empty()  // [NG][NG] forms cooperation
+    Match(g, {"GG:c[NG]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B"}).empty()  // [NG][NG] forms cooperation
     ) {
     key += "2.";
-    desc += "[GN][GN]:c[GN] (GN forms cooperation)";
+    desc += "[GN][GN]:c[GN] (GN forms cooperation, defectors are B)";
 
-    // detection of defectors
-    if (
-        Match(g, {"GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B"}).empty()  // defectors are Bad
-      ) {
-      key += "1.";
-      desc += ", [GN][GN]:c[GN]:B (defectors are B)";
-    }
-    else {
-      key += "2.";
-      desc += ", otherwise (defectors are not always B)";
-    }
-
-    // recovery path
-    if (
-      Match(g, {"BG:c[GN]:B", "BN:c[GN]:B"}).empty()
-      ) {
-      key += "1.";
-      desc += ", B[GN]:c[GN]:B (B cooperates G&N)";
-    }
-    else if (
-      Match(g, {"BG:c[GN]:B", "BN:dB:B"}).empty() || Match(g, {"BG:dB:B", "BN:c[GN]:B"}).empty()
-      ) {
-      key += "2.";
-      desc += ", BN:c[GN] or BG:c[GN] (B cooperates either GorN)";
-    }
-    else if (
-      Match(g, {"BG:c[GN]:B", "BN:d[GN]"}).empty()
-      ) {
-      key += "3.";
-      desc += ", BN:c[GN] BN:d[GN] (B cooperates G, B may gain G when defecting N)";
-    }
-    else {
-      key += "99.";
-      desc += ", unknown recov pattern";
-    }
+    classify_by_recovery_path_GN();
+    classify_by_punishment_GN();
+  }
+  else if ( // [NG][NG] forms cooperation but N has a higher value
+    Match(g, {"GG:c[NG]:B", "GN:c[GN]:B", "NG:cN:G", "NN:cN:[BG]"}).empty() ||
+    Match(g, {"GG:c[NG]:B", "GN:c[GN]:B", "NG:cN:[BG]", "NN:cN:G"}).empty()
+    ) {
+    key += "3.";
+    desc += "[GN][GN]:c[GN]:[BG] (GN forms cooperation, defector becomes G)";
   }
   else if (
     Match(g, {"GG:c[NG]:B", "GN:c[GN]", "NG:c[GN]", "NN:d*"}).empty()  // [NG][NG] but NN forms cooperation
     ) {
-    key += "3.";
+    key += "4.";
     desc += "GG:c[GN] GN:c[GN] NG:c[GN] NN:d[GN]";
   }
   else {
