@@ -722,8 +722,8 @@ std::string ClassifyType2(Game& g) {
     key += "2.";
     desc += "GG:cG GN:*[BG] NG:*N NN:*[BG] (N minor)";
 
-    classify_by_reputation_change_when_meeting_G();
-    classify_by_pusniment_pattern();
+    // classify_by_reputation_change_when_meeting_G();
+    // classify_by_pusniment_pattern();
   }
   else if (
     Match(g, {"GG:cG:B", "GN:*[BG]", "NG:*N", "NN:*N"}).empty()  // N significant
@@ -801,6 +801,170 @@ std::string ClassifyType2(Game& g) {
   return key + " " + desc;
 }
 
+std::string ClassifyType3(Game& g) {
+  const ReputationDynamics rd = g.rep_dynamics;
+  const ActionRule ar = g.resident_ar;
+
+  const Reputation B = Reputation::B, N = Reputation::N, G = Reputation::G;
+  const Action D = Action::D, C = Action::C;
+
+  // GGd => B
+  if (rd.RepAt(G, G, D) != B) {
+    throw std::runtime_error("must not happen");
+  }
+
+  std::string desc = "", key = "";
+
+  auto classify_by_reputation_change_when_meeting_G = [&g,&desc,&key]() {
+    // how B,N change reputation when meeting G
+    if (
+      Match(g, {"BG:cG", "NG:*G"}).empty()   // B->G<-N
+      )
+    {
+      key += "1.";
+      desc += ", BG:cG, NG:*G (B->G<-N)";
+    }
+    else if (
+      Match(g, {"BG:cG", "NG:*B"}).empty()  // N->B->G
+      )
+    {
+      key += "2.";
+      desc += ", BG:cG NG:*B (N->B->G)";
+    }
+    else if (
+      Match(g, {"BG:*N", "NG:*G"}).empty() // B->N->G
+      )
+    {
+      key += "3.";
+      desc += ", BG:*N NG:*G (B->N->G)";
+    }
+    else if (
+      Match(g, {"BG:cG", "NG:*N"}).empty() // B->G N
+      )
+    {
+      key += "4.";
+      desc += ", BG:cG NG:*N (B->G N)";
+    }
+    else if (
+      Match(g, {"BG:*N", "NG:*N"}).empty()  // B->N G
+      )
+    {
+      key += "5.";
+      desc += ", BG:*N NG:*N (B->N G)";
+    }
+    else if (
+      Match(g, {"BG:*B", "NG:*G"}).empty()  // B N->G
+      )
+    {
+      key += "6.";
+      desc += ", BG:*B NG:*G (B N->G)";
+    }
+    else if (
+      Match(g, {"BG:*B", "NG:*N"}).empty()  // B N G
+      )
+    {
+      key += "7.";
+      desc += ", BG:*B NG:*N (B N G)";
+    }
+    else {
+      key += "99.";
+    }
+  };
+
+  auto classify_by_panishment_pattern = [&g,&desc,&key]() {
+    if (
+      Match(g, {"GB:dG"}).empty()
+      )
+    {
+      key += "1.";
+      desc += ", GB:dG";
+    }
+    else if (
+      Match(g, {"GB:dN"}).empty()
+      )
+    {
+      key += "2.";
+      desc += ", GB:dN";
+    }
+    else if (
+      Match(g, {"GB:dB"}).empty()
+      )
+    {
+      key += "3.";
+      desc += ", GB:dB";
+    }
+    else {
+      key += "99.";
+    }
+  };
+
+  const std::array<double,3> H = g.ResidentEqReputation();
+
+  // classify by GG:cG:B or GG:cN:B
+  if (
+    Match(g, {"GG:cG:B"}).empty() && H[1] < 0.1  // G is dominant
+    )
+  {
+    key += "1.";
+    desc += "GG:cG h_N<0.1 (G dominant)";
+
+    classify_by_reputation_change_when_meeting_G();
+    classify_by_panishment_pattern();
+  }
+  else if (
+    Match(g, {"GG:c[NG]:B", "GN:c[GN]", "NG:c[GN]", "NN:c[GN]"}).empty()  // [NG][NG] forms cooperation
+    ) {
+    key += "2.";
+    desc += "[GN][GN]:c[GN] (GN forms cooperation)";
+
+    // detection of defectors
+    if (
+        Match(g, {"GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B"}).empty()  // defectors are Bad
+      ) {
+      key += "1.";
+      desc += ", [GN][GN]:c[GN]:B (defectors are B)";
+    }
+    else {
+      key += "2.";
+      desc += ", otherwise (defectors are not always B)";
+    }
+
+    // recovery path
+    if (
+      Match(g, {"BG:c[GN]:B", "BN:c[GN]:B"}).empty()
+      ) {
+      key += "1.";
+      desc += ", B[GN]:c[GN]:B (B cooperates G&N)";
+    }
+    else if (
+      Match(g, {"BG:c[GN]:B", "BN:dB:B"}).empty() || Match(g, {"BG:dB:B", "BN:c[GN]:B"}).empty()
+      ) {
+      key += "2.";
+      desc += ", BN:c[GN] or BG:c[GN] (B cooperates either GorN)";
+    }
+    else if (
+      Match(g, {"BG:c[GN]:B", "BN:d[GN]"}).empty()
+      ) {
+      key += "3.";
+      desc += ", BN:c[GN] BN:d[GN] (B cooperates G, B may gain G when defecting N)";
+    }
+    else {
+      key += "99.";
+      desc += ", unknown recov pattern";
+    }
+  }
+  else if (
+    Match(g, {"GG:c[NG]:B", "GN:c[GN]", "NG:c[GN]", "NN:d*"}).empty()  // [NG][NG] but NN forms cooperation
+    ) {
+    key += "3.";
+    desc += "GG:c[GN] GN:c[GN] NG:c[GN] NN:d[GN]";
+  }
+  else {
+    key += "99.";
+  }
+
+  return key + " " + desc;
+}
 struct Input {
   Input(uint64_t _gid, double _cprob, double h0, double h1, double h2) : gid(_gid), c_prob(_cprob), h({h0,h1,h2}) {};
   uint64_t gid;
@@ -937,7 +1101,7 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < inputs.size(); i++) {
     const Input& input = inputs[i];
     Game g(0.02, 0.02, input.gid, input.c_prob, input.h);
-    std::string type = ClassifyType2(g);
+    std::string type = ClassifyType3(g);
     int th = omp_get_thread_num();
     outs[th].map_type_inputs[type].emplace_back(input);
   }
