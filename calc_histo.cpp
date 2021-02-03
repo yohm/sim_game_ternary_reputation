@@ -717,44 +717,69 @@ std::string ClassifyType2(Game& g) {
     classify_by_pusniment_pattern();
   }
   else if (
-    Match(g, {"GG:cG:B", "GN:*[BG]", "NG:*N"}).empty()  // N significant
+    Match(g, {"GG:cG:B", "GN:*[BG]", "NG:*N", "NN:*[BG]"}).empty()  // N significant
     ) {
     key += "2.";
-    desc += "GG:cG GN:*[BG] NG:*N (N significant)";
+    desc += "GG:cG GN:*[BG] NG:*N NN:*[BG] (N minor)";
 
     classify_by_reputation_change_when_meeting_G();
     classify_by_pusniment_pattern();
+  }
+  else if (
+    Match(g, {"GG:cG:B", "GN:*[BG]", "NG:*N", "NN:*N"}).empty()  // N significant
+    ) {
+    key += "3.";
+    desc += "GG:cG GN:*[BG] NG:*N NN:*N (N major)";
 
     /*
     if (
-      Match(g, {"NN:*N", "NB:*N", "BN:*N"}).empty()
-      )
-    {
+      Match(g, {"NB:*[BG]"}).empty()
+      ) {
       key += "1.";
-      desc += ", NN:*N NB:*N BN:*N (N stable)";
+      desc += "NB:*[BG]";
     }
     else {
-      key += "99.";
-      desc += ", otherwise";
+      key += "2.";
+      desc += "NB:*N";
     }
      */
+    // classify_by_reputation_change_when_meeting_G();
+    // classify_by_pusniment_pattern();
   }
   else if (
-    Match(g, {"GG:cG:B", "GN:*N", "NG:*G"}).empty()  // N significant
+    Match(g, {"GG:cG:B", "GN:*N", "NG:*G", "NN:*[BG]"}).empty()  // N significant
     )
   {
-    key += "3.";
-    desc += "GG:cG:B, GN:*N NG:*G (N significant)";
+    key += "4.";
+    desc += "GG:cG:B, GN:*N NG:*G NN:*[BG] (N minor)";
 
     classify_by_reputation_change_when_meeting_G();
     classify_by_pusniment_pattern();
+  }
+  else if (
+    Match(g, {"GG:cG:B", "GN:*N", "NG:*G", "NN:*N"}).empty()  // N significant
+    )
+  {
+    key += "5.";
+    desc += "GG:cG:B, GN:*N NG:*G NN:*N (N major)";
+
+    if (g.ResidentEqReputation()[2] > 0.7) {
+      key += "1.";
+      desc += ", h_G>0.7";
+    }
+    else {
+      key += "2.";
+      desc += ", h_G<0.7";
+    }
+    // classify_by_reputation_change_when_meeting_G();
+    // classify_by_pusniment_pattern();
   }
   else if (
     Match(g, {"GG:cG:B", "GN:cN", "NG:cN"}).empty()  // N more significant
     )
   {
-    key += "4.";
-    desc += "GG:cG:B GN:cN NG:cN (N more significant)";
+    key += "6.";
+    desc += "GG:cG:B GN:cN NG:cN (N major)";
 
     // classify_by_recovery_when_meeting_NG();
     // classify_by_pusniment_pattern();
@@ -763,8 +788,8 @@ std::string ClassifyType2(Game& g) {
     Match(g, {"GG:cN:B"}).empty()
     )
   {
-    key += "5.";
-    desc += "GG:cN:B (N more significant)";
+    key += "7.";
+    desc += "GG:cN:B (N major)";
 
     // classify_by_reputation_change_when_meeting_G();
     // classify_by_pusniment_pattern();
