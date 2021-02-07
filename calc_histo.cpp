@@ -130,21 +130,28 @@ std::string ClassifyType(const Game& g) {
 
   std::string desc = "", key = "";
 
-  auto classify_by_reputation_change_when_meeting_G = [&g,&desc,&key]() {
+  auto classify_by_apology_to_G = [&g,&desc,&key]() {
     // how B,N change reputation when meeting G
     if (
       Match(g, {"BG:cG", "NG:*G"}).empty()   // B->G<-N
       )
     {
-      key += "1.";
-      desc += ", BG:cG NG:*G (B->G<-N)";
+      key += "A1-1.";
+      desc += ", BG:cG NG:*G (A1-1: B->G<-N)";
     }
     else if (
       Match(g, {"BG:cG", "NG:*B"}).empty()  // N->B->G
       )
     {
-      key += "2.";
-      desc += ", BG:cG NG:*B (N->B->G)";
+      key += "A1-2.";
+      desc += ", BG:cG NG:*B (A1-2: N->B->G)";
+    }
+    else if (
+      Match(g, {"BG:cG", "NG:*N"}).empty() // B->G N
+      )
+    {
+      key += "A1-3.";
+      desc += ", BG:cG NG:*N (A1-3: B->G N)";
     }
     else if (
       Match(g, {"BG:cN:B", "NG:cG"}).empty() || // B->N->G
@@ -152,36 +159,29 @@ std::string ClassifyType(const Game& g) {
       Match(g, {"BG:cN:B", "NG:dG"}).empty()
       )
     {
-      key += "3.";
-      desc += ", BG:*N NG:*G (B->N->G)";
-    }
-    else if (
-      Match(g, {"BG:cG", "NG:*N"}).empty() // B->G N
-      )
-    {
-      key += "4.";
-      desc += ", BG:cG NG:*N (B->G N)";
+      key += "A2-1.";
+      desc += ", BG:*N NG:*G (A2-1: B->N->G)";
     }
     else if (
       Match(g, {"BG:*N", "NG:*N"}).empty()  // B->N G
       )
     {
-      key += "5.";
-      desc += ", BG:*N NG:*N (B->N G)";
+      key += "A2-2.";
+      desc += ", BG:*N NG:*N (A2-2: B->N G)";
     }
     else if (
       Match(g, {"BG:*B", "NG:*G"}).empty()  // B N->G
       )
     {
-      key += "6.";
-      desc += ", BG:*B NG:*G (B N->G)";
+      key += "A3-1.";
+      desc += ", BG:*B NG:*G (A3-1: B N->G)";
     }
     else if (
       Match(g, {"BG:*B", "NG:*N"}).empty()  // B N G
       )
     {
-      key += "7.";
-      desc += ", BG:*B NG:*N (B N G)";
+      key += "A3-2.";
+      desc += ", BG:*B NG:*N (A3-2: B N G)";
     }
     else {
       key += "99.";
@@ -193,22 +193,22 @@ std::string ClassifyType(const Game& g) {
       Match(g, {"GB:dG"}).empty()
       )
     {
-      key += "1.";
-      desc += ", GB:dG (G punisher is justified)";
+      key += "P1.";
+      desc += ", GB:dG (P1: G punisher is justified)";
     }
     else if (
       Match(g, {"GB:dN"}).empty()
       )
     {
-      key += "2.";
-      desc += ", GB:dN (G punisher becomes N)";
+      key += "P2.";
+      desc += ", GB:dN (P2: G punisher becomes N)";
     }
     else if (
       Match(g, {"GB:dB"}).empty()
       )
     {
-      key += "3.";
-      desc += ", GB:dB (G punisher becomes B)";
+      key += "P3.";
+      desc += ", GB:dB (P3: G punisher becomes B)";
     }
     else {
       key += "99.";
@@ -220,23 +220,23 @@ std::string ClassifyType(const Game& g) {
     if (
       Match(g, {"BG:c[GN]:B", "BN:c[GN]:B"}).empty()
       ) {
-      key += "1.";
-      desc += ", B[GN]:c[GN]:B (B cooperates G&N)";
+      key += "A1.";
+      desc += ", B[GN]:c[GN]:B (A1: B cooperates G&N)";
     } else if (
       Match(g, {"BG:c[GN]:B", "BN:dB:B"}).empty()
       ) {
-      key += "2.";
-      desc += ", BN:dB:B or BG:c[GN]:B (B cooperates with G but not with N)";
-    } else if (
-      Match(g, {"BG:dB:B", "BN:c[GN]:B"}).empty()
-      ) {
-      key += "3.";
-      desc += ", BN:c[GN]:B or BG:dB:B (B cooperates with N but not with G)";
+      key += "A2-1.";
+      desc += ", BN:dB:B or BG:c[GN]:B (A2-1: B cooperates with G but not with N)";
     } else if (
       Match(g, {"BG:c[GN]:B", "BN:d[GN]"}).empty()
       ) {
-      key += "4.";
-      desc += ", BG:c[GN] BN:d[GN] (B cooperates G, B may gain G when defecting N)";
+      key += "A2-2.";
+      desc += ", BG:c[GN] BN:d[GN] (A2-2: B cooperates G not with N, B may gain G when defecting N)";
+    } else if (
+      Match(g, {"BG:dB:B", "BN:c[GN]:B"}).empty()
+      ) {
+      key += "A3.";
+      desc += ", BN:c[GN]:B or BG:dB:B (A3: B cooperates with N but not with G)";
     } else {
       key += "99.";
       desc += ", unknown recovery pattern";
@@ -248,22 +248,22 @@ std::string ClassifyType(const Game& g) {
       Match(g, {"GB:d[GN]", "NB:d[GN]"}).empty()
       )
     {
-      key += "1.";
-      desc += ", GB:d[GN] NB:d[GN] (both GN punishers are justified)";
+      key += "P1.";
+      desc += ", GB:d[GN] NB:d[GN] (P1: both GN punishers are justified)";
     }
     else if (
       Match(g, {"GB:d[GN]", "NB:dB"}).empty()
       )
     {
-      key += "2.";
-      desc += ", GB:d[NG] NB:dB (N pusniher is not justified)";
+      key += "P2.";
+      desc += ", GB:d[NG] NB:dB (P2: N pusniher is not justified)";
     }
     else if (
       Match(g, {"GB:dB", "NB:d[GN]"}).empty()
       )
     {
-      key += "3.";
-      desc += ", GB:dB, NB:d[GN] (G punisher is not justified)";
+      key += "P3.";
+      desc += ", GB:dB, NB:d[GN] (P3: G punisher is not justified)";
     }
     else {
       key += "99.";
@@ -277,17 +277,17 @@ std::string ClassifyType(const Game& g) {
     /* Match(g, {"GG:cG:B"}).empty() && */ H[1] < 0.1  // G is dominant
     )
   {
-    key += "1.";
-    desc += "GG:cG h_N<0.1 (G dominant)";
+    key += "C1.";
+    desc += "GG:cG:B h_N<0.1 (C1: G dominant)";
 
     classify_by_punishment_G();
-    classify_by_reputation_change_when_meeting_G();
+    classify_by_apology_to_G();
   }
   else if (
     Match(g, {"GG:c[NG]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B"}).empty()  // [NG][NG] forms cooperation
     ) {
-    key += "2.";
-    desc += "[GN][GN]:c[GN]:B (GN forms cooperation, defectors are B)";
+    key += "C2.";
+    desc += "[GN][GN]:c[GN]:B (C2: GN cooperation, defector gets B)";
 
     classify_by_punishment_GN();
     classify_by_recovery_path_GN();
@@ -296,69 +296,39 @@ std::string ClassifyType(const Game& g) {
     Match(g, {"GG:cG:B", "GN:cG:B", "NG:cN:G", "NN:cN:[GB]"}).empty() ||
     Match(g, {"GG:cG:B", "GN:cG:B", "NG:cN:[GB]", "NN:cN:G"}).empty()
     ) {
-    key += "3.";
-    desc += "[GN][GN]:c[GN]:[BG] (GN forms cooperation, defector becomes G)";
+    key += "C3.";
+    desc += "[GN][GN]:c[GN]:[BG] (C3: GN cooperation, defecting N gets G)";
+
+    classify_by_punishment_GN();
+    classify_by_recovery_path_GN();
   }
   else if (
     Match(g, {"GG:cG:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:dG"}).empty()
     ) {
-    key += "4.";
-    desc += "GG:cG:B [GN,NG]:c[GN]:B NN:dG (NN defects and gets G)";
+    key += "C4.";
+    desc += "GG:cG:B [GN,NG]:c[GN]:B NN:dG (C4: NN defects and gets G)";
 
     classify_by_punishment_G();
-
-    // classify by recovery pattern
-    if (
-      Match(g, {"BG:cG:B"}).empty()
-      ) {
-      key += "1.";
-      desc += ", BG:cG:B (recover to G)";
-    }
-    else if (
-      Match(g, {"BG:cN:B"}).empty()
-      ) {
-      key += "2.";
-      desc += ", BG:cN:B (recover to N)";
-    }
-    else {
-      key += "99.";
-    }
+    classify_by_apology_to_G();
 
   }
   else if (
     Match(g, {"GG:cG:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:dN"}).empty()
     ) {
-    key += "5.";
-    desc += "GG:cG:B [GN,NG]:c[GN]:B NN:dN (NN defects and gets N)";
+    key += "C5.";
+    desc += "GG:cG:B [GN,NG]:c[GN]:B NN:dN (C5: NN defects and gets N)";
 
     classify_by_punishment_G();
-
-    // classify by recovery pattern
-    if (
-      Match(g, {"BG:cG:B"}).empty()
-      ) {
-      key += "1.";
-      desc += ", BG:cG:B";
-    }
-    else if (
-      Match(g, {"BG:cN:G"}).empty()
-      ) {
-      key += "2.";
-      desc += ", BG:cN:B";
-    }
-    else {
-      key += "99.";
-    }
-
+    classify_by_apology_to_G();
   }
   else if (
     Match(g, {"GG:cG:B", "GN:cN:B", "NG:cG:B", "NN:dB"}).empty()  // [NG][NG] but NN forms cooperation
     ) {
-    key += "6.";
-    desc += "[GN][GN]:c[GN]:B NN:dB (NN defects and gets B)";
+    key += "C6.";
+    desc += "[GN][GN]:c[GN]:B NN:dB (C6: NN defects and gets B)";
 
     classify_by_punishment_G();
-    classify_by_reputation_change_when_meeting_G();
+    classify_by_apology_to_G();
   }
   else {
     key += "99.";
@@ -452,7 +422,7 @@ void PrintHHisto(const std::array<HistoNormalBin,3>& h_histo) {
 }
 
 std::string ExtractKeyFromType(const std::string& type) {
-  std::regex re(R"(^[\d\.]+)");
+  std::regex re(R"(^[CPA\d\.\-]+)");
   std::smatch m;
   if (std::regex_search(type, m, re) ) {
     return m[0].str();
