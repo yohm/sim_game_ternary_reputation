@@ -133,55 +133,25 @@ std::string ClassifyType(const Game& g) {
   auto classify_by_apology_to_G = [&g,&desc,&key]() {
     // how B,N change reputation when meeting G
     if (
-      Match(g, {"BG:cG", "NG:*G"}).empty()   // B->G<-N
+      Match(g, {"BG:cG"}).empty()
       )
     {
-      key += "A1-1.";
-      desc += ", BG:cG NG:*G (A1-1: B->G<-N)";
+      key += "A1.";
+      desc += ", BG:cG (A1: B->G)";
     }
     else if (
-      Match(g, {"BG:cG", "NG:*B"}).empty()  // N->B->G
+      Match(g, {"BG:*N"}).empty()
       )
     {
-      key += "A1-2.";
-      desc += ", BG:cG NG:*B (A1-2: N->B->G)";
+      key += "A2.";
+      desc += ", BG:*N (A2: B->N)";
     }
     else if (
-      Match(g, {"BG:cG", "NG:*N"}).empty() // B->G N
+      Match(g, {"BG:*B"}).empty()
       )
     {
-      key += "A1-3.";
-      desc += ", BG:cG NG:*N (A1-3: B->G N)";
-    }
-    else if (
-      Match(g, {"BG:cN:B", "NG:cG"}).empty() || // B->N->G
-      Match(g, {"BG:dN", "NG:cG"}).empty() ||
-      Match(g, {"BG:cN:B", "NG:dG"}).empty()
-      )
-    {
-      key += "A2-1.";
-      desc += ", BG:*N NG:*G (A2-1: B->N->G)";
-    }
-    else if (
-      Match(g, {"BG:*N", "NG:*N"}).empty()  // B->N G
-      )
-    {
-      key += "A2-2.";
-      desc += ", BG:*N NG:*N (A2-2: B->N G)";
-    }
-    else if (
-      Match(g, {"BG:*B", "NG:*G"}).empty()  // B N->G
-      )
-    {
-      key += "A3-1.";
-      desc += ", BG:*B NG:*G (A3-1: B N->G)";
-    }
-    else if (
-      Match(g, {"BG:*B", "NG:*N"}).empty()  // B N G
-      )
-    {
-      key += "A3-2.";
-      desc += ", BG:*B NG:*N (A3-2: B N G)";
+      key += "A3.";
+      desc += ", BG:*B (A3: B)";
     }
     else {
       key += "99.";
