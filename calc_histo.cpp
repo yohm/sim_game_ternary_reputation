@@ -195,18 +195,18 @@ std::string ClassifyType(const Game& g) {
     } else if (
       Match(g, {"BG:c[GN]:B", "BN:dB:B"}).empty()
       ) {
-      key += "A2-1.";
-      desc += ", BN:dB:B or BG:c[GN]:B (A2-1: B cooperates with G but not with N)";
-    } else if (
-      Match(g, {"BG:c[GN]:B", "BN:d[GN]"}).empty()
-      ) {
-      key += "A2-2.";
-      desc += ", BG:c[GN] BN:d[GN] (A2-2: B cooperates G not with N, B may gain G when defecting N)";
+      key += "A2.";
+      desc += ", BN:dB:B or BG:c[GN]:B (A2: B cooperates with G but not with N)";
     } else if (
       Match(g, {"BG:dB:B", "BN:c[GN]:B"}).empty()
       ) {
       key += "A3.";
       desc += ", BN:c[GN]:B or BG:dB:B (A3: B cooperates with N but not with G)";
+    } else if (
+      Match(g, {"BG:c[GN]:B", "BN:d[GN]"}).empty()
+      ) {
+      key += "A4.";
+      desc += ", BG:c[GN] BN:d[GN] (A4: B cooperates G not with N, B may gain G when defecting N)";
     } else {
       key += "99.";
       desc += ", unknown recovery pattern";
