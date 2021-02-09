@@ -6,6 +6,8 @@
 #include <cmath>
 #include <functional>
 #include <iomanip>
+#include <icecream.hpp>
+#include <Eigen/Dense>
 #include "ReputationDynamics.hpp"
 
 class Game {
@@ -64,6 +66,11 @@ class Game {
        << "  - h_B: " << resident_h_star[0] << "\n"
        << "  - h_N: " << resident_h_star[1] << "\n"
        << "  - h_G: " << resident_h_star[2] << "\n";
+    auto cont_payoff = ContinuationPayoff(0.5, 2.0, 1.0);
+    ss << "- Continuation payoff (w=0.5, b/c=2.0):" << "\n"
+       << "  - v_B: " << cont_payoff[0] << "\n"
+       << "  - v_N: " << cont_payoff[1] << "\n"
+       << "  - v_G: " << cont_payoff[2] << "\n";
     return ss.str();
   }
   uint64_t ID() const {
@@ -127,6 +134,36 @@ class Game {
     rep_hist[2] = rep_dynamics.RepAt(rep_hist[1], resident_rep, act_hist[1]);
     act_hist[2] = resident_ar.ActAt(rep_hist[2], resident_rep);
     return std::make_pair(rep_hist, act_hist);
+  }
+  std::array<double,3> ContinuationPayoff(double w, double benefit, double cost = 1.0) const {  // calculate continuation payoff for each reputation
+    auto h = ResidentEqReputation();
+    Eigen::Matrix3d A;
+    A << 0,0,0, 0,0,0, 0,0,0;
+    for (int x = 0; x < 3; x++) {
+      Reputation X = static_cast<Reputation>(x);
+      A(x, x) += 1.0;
+      for (int y = 0; y < 3; y++) {
+        Reputation Y = static_cast<Reputation>(y);
+        Reputation Z = std::get<1>(At(X,Y));
+        int z = static_cast<int>(Z);
+        A(x, z) -= w * h[y];
+      }
+    }
+
+    Eigen::Vector3d V;
+    V << 0,0,0;
+    for (int x = 0; x < 3; x++) {
+      Reputation X = static_cast<Reputation>(x);
+      for (int y = 0; y < 3; y++) {
+        Reputation Y = static_cast<Reputation>(y);
+        if (resident_ar.ActAt(Y, X) == Action::C) { V(x) += benefit * h[y]; }
+        if (resident_ar.ActAt(X, Y) == Action::C) { V(x) -= cost * h[y]; }
+      }
+    }
+
+    Eigen::Vector3d ans_e = A.colPivHouseholderQr().solve(V);
+    ans_e *= (1.0 - w);  // normalize
+    return {ans_e(0), ans_e(1), ans_e(2)};
   }
   private:
   v3d_t resident_h_star; // equilibrium reputation of resident species
