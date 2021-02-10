@@ -66,7 +66,7 @@ class Game {
        << "  - h_B: " << resident_h_star[0] << "\n"
        << "  - h_N: " << resident_h_star[1] << "\n"
        << "  - h_G: " << resident_h_star[2] << "\n";
-    auto cont_payoff = ContinuationPayoff(0.5, 2.0, 1.0);
+    auto cont_payoff = ContinuationPayoff(0.5, 2.0, 1.0, mu_e);
     ss << "- Continuation payoff (w=0.5, b/c=2.0):" << "\n"
        << "  - v_B: " << cont_payoff[0] << "\n"
        << "  - v_N: " << cont_payoff[1] << "\n"
@@ -135,7 +135,7 @@ class Game {
     act_hist[2] = resident_ar.ActAt(rep_hist[2], resident_rep);
     return std::make_pair(rep_hist, act_hist);
   }
-  std::array<double,3> ContinuationPayoff(double w, double benefit, double cost = 1.0) const {  // calculate continuation payoff for each reputation
+  std::array<double,3> ContinuationPayoff(double w, double benefit, double cost, double mu_e) const {  // calculate continuation payoff for each reputation taking into account implementation error
     auto h = ResidentEqReputation();
     Eigen::Matrix3d A;
     A << 0,0,0, 0,0,0, 0,0,0;
@@ -144,9 +144,13 @@ class Game {
       A(x, x) += 1.0;
       for (int y = 0; y < 3; y++) {
         Reputation Y = static_cast<Reputation>(y);
-        Reputation Z = std::get<1>(At(X,Y));
+        auto next = At(X, Y);
+        Reputation Z = std::get<1>(next);
         int z = static_cast<int>(Z);
-        A(x, z) -= w * h[y];
+        A(x, z) -= w * h[y] * (1.0 - mu_e);
+        Reputation Z_not = std::get<2>(next);
+        int z_not = static_cast<int>(Z_not);
+        A(x, z_not) -= w * h[y] * mu_e;
       }
     }
 
@@ -156,8 +160,8 @@ class Game {
       Reputation X = static_cast<Reputation>(x);
       for (int y = 0; y < 3; y++) {
         Reputation Y = static_cast<Reputation>(y);
-        if (resident_ar.ActAt(Y, X) == Action::C) { V(x) += benefit * h[y]; }
-        if (resident_ar.ActAt(X, Y) == Action::C) { V(x) -= cost * h[y]; }
+        if (resident_ar.ActAt(Y, X) == Action::C) { V(x) += benefit * h[y] * (1.0-mu_e); }
+        if (resident_ar.ActAt(X, Y) == Action::C) { V(x) -= cost * h[y] * (1.0-mu_e); }
       }
     }
 
