@@ -372,6 +372,27 @@ void PrintHistogramPrescriptions(const std::vector<Input> inputs) {
   }
 }
 
+void PrintContinuationPayoffOrders(const std::vector<Input> inputs) {
+  std::map<std::string,int> order_count = {{"BNG", 0}, {"BGN", 0}, {"NBG", 0}, {"NGB", 0}, {"GBN", 0}, {"GNB", 0}};
+  for (const Input& input: inputs) {
+    Game g(0.02, 0.02, input.gid, input.c_prob, input.h);
+    auto cont = g.ContinuationPayoff(0.5, 2.0, 1.0, 0.02);
+    if (cont[0] <= cont[1] && cont[1] <= cont[2]) { order_count.at("BNG") += 1; }
+    else if(cont[0] <= cont[2] && cont[2] <= cont[1]) { order_count.at("BGN") += 1; }
+    else if(cont[1] <= cont[0] && cont[0] <= cont[2]) { order_count.at("NBG") += 1; }
+    else if(cont[1] <= cont[2] && cont[2] <= cont[0]) { order_count.at("NGB") += 1; }
+    else if(cont[2] <= cont[0] && cont[0] <= cont[1]) { order_count.at("GBN") += 1; }
+    else if(cont[2] <= cont[1] && cont[1] <= cont[0]) { order_count.at("GNB") += 1; }
+    else { IC(cont); throw std::runtime_error("must not happen"); }
+  }
+  std::cout << "reputation order:\n";
+  for (const auto& kv: order_count) {
+    if (kv.second > 0) {
+      std::cout << "  " << kv.first << ": " << kv.second << "\n";
+    }
+  }
+}
+
 void PrintHHisto(const std::array<HistoNormalBin,3>& h_histo) {
   assert( h_histo.size() == 3 );
   std::cout << "H_B histo:" << std::endl;
@@ -459,6 +480,7 @@ int main(int argc, char* argv[]) {
   for (auto kv: out.map_type_inputs) {
     std::cout << "=================== TYPE " << kv.first << "====================" << std::endl;
     PrintHistogramPrescriptions(kv.second);
+    PrintContinuationPayoffOrders(kv.second);
     PrintHHisto(histo_map.at(kv.first));
 
     const size_t OUT_SIZE_TH = 1000;
