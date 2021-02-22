@@ -59,7 +59,13 @@ int main(int argc, char *argv[]) {
     uint64_t new_rd_id = g.rep_dynamics.Permute({1,0,2}).ID();
     uint64_t new_ar_id = g.resident_ar.Permute({1,0,2}).ID();
     uint64_t new_id = (new_rd_id << 9ul) + new_ar_id;  // == 147150009650
-    assert( new_id == g.NormalizedGame().ID() );
+    Game g_norm = g.NormalizedGame();
+    assert(new_id == g_norm.ID() );
+    auto ht_norm = g_norm.ResidentEqReputation();
+    assert( Close(ht_norm[0], 0.261) );
+    assert( Close(ht_norm[1], 0.077) );
+    assert( Close(ht_norm[2], 0.661) );
+    assert( Close(g.ResidentCoopProb(), g_norm.ResidentCoopProb()) );
 
     assert( g.At(Reputation::G, Reputation::B) == std::make_tuple(Action::D, Reputation::N, Reputation::G));
 
