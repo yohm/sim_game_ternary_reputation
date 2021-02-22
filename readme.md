@@ -4,7 +4,7 @@
 
 - build binary using cmake.
     - Some of them requires OpenMP and/or MPI.
-    - On macOS, `brew install openmpi` or `brew install libomp` are required.
+    - On macOS, `brew install openmpi` and `brew install libomp` are required.
 - On Fugaku, `./fugaku_build.sh` to build `main.out`. (main.out requires MPI and OpenMP)
 
 ## test_Game.out
@@ -13,7 +13,7 @@ Run unit tests for `Game` class. (`Game` contains `ActionRule` and `ReputationDy
 If you run it with GameID as an argument, it will print the details of the Game.
 
 ```shell
-$ ./test_Game.out 140322844084
+> ./test_Game.out 140322844084
 - GameID: 140322844084
   - RD_id, AR_id: 274068054, 436
 - Prescriptions:
@@ -42,14 +42,15 @@ $ ./test_Game.out 140322844084
 ## print_normalized_RD.out
 
 Print all *independent* reputation dynamics IDs taking into account the permutation symmetry between reputations.
+This is a pre-process of `main.out`.
 
 ```shell
 ./print_normalized_RD.out > RD_list
 ```
 
-## main.out
+## main_search_ESS.out
 
-Executes the search of all the ESS pairs. Specify the file of reputaion dynamcis IDs as an argument.
+Executes the search of all the ESS pairs. Specify the file of reputation dynamics IDs as an argument.
 Parallelized by OpenMP and MPI.
 
 ```shell

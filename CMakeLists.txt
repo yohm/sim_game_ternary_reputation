@@ -12,8 +12,8 @@ include_directories(${CMAKE_SOURCE_DIR}/icecream /usr/local/include/eigen3)
 set(SOURCE_FILES ReputationDynamics.hpp Game.hpp PopulationFlow.hpp)
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-add_executable(main.out main.cpp ${SOURCE_FILES})
-target_link_libraries(main.out PRIVATE OpenMP::OpenMP_CXX ${MPI_LIBRARIES})
+add_executable(main_search_ESS.out main_search_ESS.cpp ${SOURCE_FILES})
+target_link_libraries(main_search_ESS.out PRIVATE OpenMP::OpenMP_CXX ${MPI_LIBRARIES})
 
 add_executable(recalculate_game_ids.out recalculate_game_ids.cpp ${SOURCE_FILES})
 target_link_libraries(recalculate_game_ids.out PRIVATE OpenMP::OpenMP_CXX)
