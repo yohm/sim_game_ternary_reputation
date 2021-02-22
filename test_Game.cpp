@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <icecream.hpp>
 #include "Game.hpp"
 #include "PopulationFlow.hpp"
 
@@ -54,6 +55,11 @@ int main(int argc, char *argv[]) {
     assert( Close(mut_h[2], 0.573) );
 
     assert( g.IsESS(2.0, 1.0) == false );
+
+    uint64_t new_rd_id = g.rep_dynamics.Permute({1,0,2}).ID();
+    uint64_t new_ar_id = g.resident_ar.Permute({1,0,2}).ID();
+    uint64_t new_id = (new_rd_id << 9ul) + new_ar_id;  // == 147150009650
+    assert( new_id == g.NormalizedID() );
 
     assert( g.At(Reputation::G, Reputation::B) == std::make_tuple(Action::D, Reputation::N, Reputation::G));
 

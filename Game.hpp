@@ -88,6 +88,32 @@ class Game {
     Reputation r_not = rep_dynamics.RepAt(donor, recipient, a_not);
     return std::make_tuple(a, r, r_not);
   }
+  uint64_t NormalizedID() const {
+    auto h = ResidentEqReputation();
+
+    int Gi = 0;
+    if (h[0] >= h[1] && h[0] >= h[2]) { Gi = 0; }
+    else if (h[1] >= h[0] && h[1] >= h[2]) { Gi = 1; }
+    else if (h[2] >= h[0] && h[2] >= h[1]) { Gi = 2; }
+    else { throw std::runtime_error("must not happen"); }
+
+    Reputation Gn = static_cast<Reputation>(Gi);
+    Reputation Bn = rep_dynamics.RepAt(Gn, Gn, Action::D);
+    if (Gn == Bn) { throw std::runtime_error("must not happen"); }
+    int Bi = static_cast<int>(Bn);
+    int Ni = 3 - Bi - Gi;
+
+    std::array<int,3> map{};
+    map[Gi] = 2;
+    map[Ni] = 1;
+    map[Bi] = 0;
+
+    ReputationDynamics new_repd = rep_dynamics.Permute(map);
+    ActionRule new_ar = resident_ar.Permute(map);
+    uint64_t ar_id = new_ar.ID();
+    uint64_t rd_id = new_repd.ID();
+    return (rd_id << 9) + ar_id;
+  }
   bool IsESS(double benefit, double cost) {
     CalcHStarResident();
     double res_payoff = (benefit-cost) * resident_coop_prob;

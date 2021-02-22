@@ -55,7 +55,8 @@ std::pair<std::vector<uint64_t>, uint64_t> find_ESSs(const ReputationDynamics& r
     num_total++;
     Game g(mu_e, mu_a, rd, ar);
     if (g.ResidentCoopProb() > coop_prob_th && g.IsESS(benefit, cost)) {
-      ess_ids.push_back(g.ID());
+      uint64_t id = g.NormalizedID();
+      ess_ids.push_back(id);
       // std::cout << "ESS is found: " << g.Inspect();
     }
   }
