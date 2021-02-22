@@ -88,7 +88,7 @@ class Game {
     Reputation r_not = rep_dynamics.RepAt(donor, recipient, a_not);
     return std::make_tuple(a, r, r_not);
   }
-  uint64_t NormalizedID() const {
+  Game NormalizedGame() const {
     auto h = ResidentEqReputation();
 
     int Gi = 0;
@@ -103,7 +103,7 @@ class Game {
     int Bi = static_cast<int>(Bn);
     int Ni = 3 - Bi - Gi;
 
-    std::array<int,3> map{};
+    std::array<int,3> map = {0,0,0};
     map[Gi] = 2;
     map[Ni] = 1;
     map[Bi] = 0;
@@ -112,7 +112,11 @@ class Game {
     ActionRule new_ar = resident_ar.Permute(map);
     uint64_t ar_id = new_ar.ID();
     uint64_t rd_id = new_repd.ID();
-    return (rd_id << 9) + ar_id;
+    uint64_t new_g_id = (rd_id << 9) + ar_id;
+
+    std::array<double,3> new_h = {h[Bi], h[Ni], h[Gi]};
+
+    return Game(mu_e, mu_a, new_g_id, ResidentCoopProb(), new_h);
   }
   bool IsESS(double benefit, double cost) {
     CalcHStarResident();

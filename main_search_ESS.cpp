@@ -44,20 +44,29 @@ std::vector<ActionRule> ActionRuleCandidates(const ReputationDynamics& rd) {
   return ans;
 }
 
-std::pair<std::vector<uint64_t>, uint64_t> find_ESSs(const ReputationDynamics& rd) {
+class Output {
+  public:
+  Output(uint64_t _gid, double _cprob, const std::array<double,3>& _h) : gid(_gid), cprob(_cprob), h(_h) {};
+  Output(const Game& g) : gid(g.ID()), cprob(g.ResidentCoopProb()), h(g.ResidentEqReputation()) {};
+  uint64_t gid;
+  double cprob;
+  std::array<double,3> h;
+  bool operator<(const Output& rhs) const { return gid < rhs.gid; }
+};
+
+std::pair<std::vector<Output>, uint64_t> find_ESSs(const ReputationDynamics& rd) {
   const double mu_e = 0.02, mu_a = 0.02, benefit = 1.2, cost = 1.0;
   const double coop_prob_th = 0.9;
 
-  std::vector<uint64_t> ess_ids;
+  std::vector<Output> ess_ids;
   uint64_t num_total = 0ull;
   std::vector<ActionRule> act_rules = ActionRuleCandidates(rd);
   for (const ActionRule& ar: act_rules) {
     num_total++;
     Game g(mu_e, mu_a, rd, ar);
     if (g.ResidentCoopProb() > coop_prob_th && g.IsESS(benefit, cost)) {
-      uint64_t id = g.NormalizedID();
-      ess_ids.push_back(id);
-      // std::cout << "ESS is found: " << g.Inspect();
+      Game new_g = g.NormalizedGame();
+      ess_ids.emplace_back(new_g);
     }
   }
   return std::make_pair(ess_ids, num_total);
@@ -108,9 +117,15 @@ int main(int argc, char *argv[]) {
   const std::vector<uint64_t> repd_ids = LoadInputFiles(argv[1], my_rank, num_procs);
 
   uint64_t total_count = 0ull, ess_count = 0ull;
-  std::vector<uint64_t> ESS_ids;
 
-  #pragma omp parallel for shared(total_count,ess_count,ESS_ids,repd_ids) default(none) schedule(dynamic)
+  int num_threads;
+  #pragma omp parallel shared(num_threads) default(none)
+  { num_threads = omp_get_num_threads(); };
+
+  std::vector<std::vector<Output>> outs_thread(num_threads);
+  // std::vector<uint64_t> ESS_ids;
+
+  #pragma omp parallel for shared(total_count,ess_count,outs_thread,repd_ids) default(none) schedule(dynamic)
   for (size_t i = 0; i <repd_ids.size(); i++) {
     int th = omp_get_thread_num();
     int num_threads = omp_get_num_threads();
@@ -120,21 +135,22 @@ int main(int argc, char *argv[]) {
     auto ans = find_ESSs(rd);
     #pragma omp atomic update
     total_count += ans.second;
-    #pragma omp atomic update
-    ess_count += ans.first.size();
-    #pragma omp critical
-    ESS_ids.insert(ESS_ids.end(), ans.first.begin(), ans.first.end());
-
+    outs_thread[th].insert(outs_thread[th].end(), ans.first.begin(), ans.first.end());
   }
 
-  std::cout << "ESS / total : " << ess_count << " / " << total_count << " at " << my_rank << " / " << num_procs << std::endl;
-  std::sort(ESS_ids.begin(), ESS_ids.end());
+  std::vector<Output> outs;
+  for (const auto& o: outs_thread) {
+    outs.insert(outs.end(), o.begin(), o.end());
+  }
+  std::sort(outs.begin(), outs.end());
+
+  std::cout << "ESS / total : " << outs.size() << " / " << total_count << " at " << my_rank << " / " << num_procs << std::endl;
 
   std::ostringstream os;
   char buffer[20];
   std::snprintf(buffer, sizeof(buffer), "ESS_ids_%06d", my_rank);
   std::ofstream fout(buffer);
-  for (uint64_t x: ESS_ids) { fout << x << "\n"; }
+  for (const Output& out: outs) { fout << out.gid << ' ' << out.cprob << ' ' << out.h[0] << ' ' << out.h[1] << ' ' << out.h[2] << "\n"; }
   fout.close();
 
   auto end = std::chrono::system_clock::now();
