@@ -9,6 +9,7 @@
 #include "mpi.h"
 #include "ReputationDynamics.hpp"
 #include "Game.hpp"
+#include <caravan.hpp>
 
 
 std::vector<ActionRule> ActionRuleCandidates(const ReputationDynamics& rd) {
@@ -72,7 +73,7 @@ std::pair<std::vector<Output>, uint64_t> find_ESSs(const ReputationDynamics& rd)
   return std::make_pair(ess_ids, num_total);
 }
 
-std::vector<uint64_t> LoadInputFiles(const char* fname, int my_rank, int num_procs) {
+std::vector<uint64_t> LoadInputFiles(const char* fname) {
   std::ifstream fin(fname);
   if (!fin) {
     std::cerr << "Failed to open file " << fname << std::endl;
@@ -87,12 +88,31 @@ std::vector<uint64_t> LoadInputFiles(const char* fname, int my_rank, int num_pro
     if (fin) { rep_ids.emplace_back(i); }
   }
 
-  std::vector<uint64_t> my_rep_ids;
-  for (size_t i = my_rank; i < rep_ids.size(); i+=num_procs) {
-    my_rep_ids.emplace_back( rep_ids[i] );
+  return std::move(rep_ids);
+}
+
+std::vector<Output> SearchRepDsOpenMP(const std::vector<uint64_t>& repd_ids) {
+  int num_threads;
+  #pragma omp parallel shared(num_threads) default(none)
+  { num_threads = omp_get_num_threads(); };
+
+  std::vector<std::vector<Output>> outs_thread(num_threads);
+  // std::vector<uint64_t> ESS_ids;
+
+  #pragma omp parallel for shared(outs_thread,repd_ids) default(none) schedule(dynamic)
+  for (size_t i = 0; i <repd_ids.size(); i++) {
+    int th = omp_get_thread_num();
+    ReputationDynamics rd(repd_ids[i]);
+
+    auto ans = find_ESSs(rd);
+    outs_thread[th].insert(outs_thread[th].end(), ans.first.begin(), ans.first.end());
   }
 
-  return std::move(my_rep_ids);
+  std::vector<Output> outs;
+  for (const auto& o: outs_thread) {
+    outs.insert(outs.end(), o.begin(), o.end());
+  }
+  return std::move(outs);
 }
 
 
@@ -114,57 +134,37 @@ int main(int argc, char *argv[]) {
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  const std::vector<uint64_t> repd_ids = LoadInputFiles(argv[1], my_rank, num_procs);
+  const std::vector<uint64_t> repd_ids = LoadInputFiles(argv[1]);
+  IC("load");
 
+  std::ofstream fout("ESS_ids");
 
-  int num_threads;
-  #pragma omp parallel shared(num_threads) default(none)
-  { num_threads = omp_get_num_threads(); };
-
-  std::vector<std::vector<Output>> outs_thread(num_threads);
-  // std::vector<uint64_t> ESS_ids;
-
-  uint64_t total_count = 0ull;
-
-  #pragma omp parallel for shared(total_count,outs_thread,repd_ids) default(none) schedule(dynamic)
-  for (size_t i = 0; i <repd_ids.size(); i++) {
-    int th = omp_get_thread_num();
-    int num_threads = omp_get_num_threads();
-    // if (true) { std::cerr << repd_ids[i] << ' ' << th << '/' << num_threads << " : " << my_rank << '/' << num_procs << std::endl; }
-    ReputationDynamics rd(repd_ids[i]);
-
+  using json = nlohmann::json;
+  std::function<void(caravan::Queue&)> on_init = [&repd_ids](caravan::Queue& q) {
+    for(uint64_t id : repd_ids) {
+      json input = id;
+      q.Push(input);
+    }
+  };
+  std::function<void(int64_t, const json&, const json&, caravan::Queue&)> on_result_receive = [&fout](int64_t task_id, const json& input, const json& output, caravan::Queue& q) {
+    for (auto o: output) {
+      IC(o.dump());
+      fout << o.at(0).get<uint64_t>() << ' ' << o.at(1).get<double>() << ' ' << o.at(2).get<double>() << ' ' << o.at(3).get<double>() << ' ' << o.at(4).get<double>() << "\n";
+    }
+  };
+  std::function<json(const json&)> do_task = [my_rank](const json& input) {
+    uint64_t repd_id = input.get<uint64_t>();
+    IC(repd_id, my_rank);
+    ReputationDynamics rd(repd_id);
     auto ans = find_ESSs(rd);
-    #pragma omp atomic update
-    total_count += ans.second;
-    outs_thread[th].insert(outs_thread[th].end(), ans.first.begin(), ans.first.end());
-  }
+    json result;
+    for (const Output& out: ans.first) {
+      result.emplace_back( std::make_tuple(out.gid, out.cprob, out.h[0], out.h[1], out.h[2]) );
+    }
+    return result;
+  };
 
-  std::vector<Output> outs;
-  for (const auto& o: outs_thread) {
-    outs.insert(outs.end(), o.begin(), o.end());
-  }
-  std::sort(outs.begin(), outs.end());
-
-  std::cout << "ESS / total : " << outs.size() << " / " << total_count << " at " << my_rank << " / " << num_procs << std::endl;
-
-  std::ostringstream os;
-  char buffer[20];
-  std::snprintf(buffer, sizeof(buffer), "ESS_ids_%06d", my_rank);
-  std::ofstream fout(buffer);
-  for (const Output& out: outs) { fout << out.gid << ' ' << out.cprob << ' ' << out.h[0] << ' ' << out.h[1] << ' ' << out.h[2] << "\n"; }
-  fout.close();
-
-  auto end = std::chrono::system_clock::now();
-  double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-  std::cout << "Elapsed time: " << elapsed / 1000.0 << " at " << my_rank << " / " << num_procs << std::endl;
-
-  uint64_t ess_count = outs.size(), total_count_sum = 0ull, ess_count_sum = 0ull;
-  MPI_Reduce(&total_count, &total_count_sum, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-  MPI_Reduce(&ess_count, &ess_count_sum, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-
-  if (my_rank == 0) {
-    std::cout << "SUM ESS / SUM TOTAL : " << ess_count_sum << " / " << total_count_sum << std::endl;
-  }
+  caravan::Start(on_init, on_result_receive, do_task, MPI_COMM_WORLD, 384, 2);
 
   MPI_Finalize();
 
