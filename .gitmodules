@@ -1,3 +1,6 @@
 [submodule "icecream"]
 	path = icecream
 	url = git@github.com:renatoGarcia/icecream-cpp.git
+[submodule "caravan-lib"]
+	path = caravan-lib
+	url = git@github.com:yohm/caravan-lib.git
