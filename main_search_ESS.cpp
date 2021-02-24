@@ -116,7 +116,6 @@ int main(int argc, char *argv[]) {
 
   const std::vector<uint64_t> repd_ids = LoadInputFiles(argv[1], my_rank, num_procs);
 
-  uint64_t total_count = 0ull, ess_count = 0ull;
 
   int num_threads;
   #pragma omp parallel shared(num_threads) default(none)
@@ -125,7 +124,9 @@ int main(int argc, char *argv[]) {
   std::vector<std::vector<Output>> outs_thread(num_threads);
   // std::vector<uint64_t> ESS_ids;
 
-  #pragma omp parallel for shared(total_count,ess_count,outs_thread,repd_ids) default(none) schedule(dynamic)
+  uint64_t total_count = 0ull;
+
+  #pragma omp parallel for shared(total_count,outs_thread,repd_ids) default(none) schedule(dynamic)
   for (size_t i = 0; i <repd_ids.size(); i++) {
     int th = omp_get_thread_num();
     int num_threads = omp_get_num_threads();
@@ -157,7 +158,7 @@ int main(int argc, char *argv[]) {
   double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
   std::cout << "Elapsed time: " << elapsed / 1000.0 << " at " << my_rank << " / " << num_procs << std::endl;
 
-  uint64_t total_count_sum = 0ull, ess_count_sum = 0ull;
+  uint64_t ess_count = outs.size(), total_count_sum = 0ull, ess_count_sum = 0ull;
   MPI_Reduce(&total_count, &total_count_sum, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
   MPI_Reduce(&ess_count, &ess_count_sum, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
 
