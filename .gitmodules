@@ -4,3 +4,6 @@
 [submodule "caravan-lib"]
 	path = caravan-lib
 	url = git@github.com:yohm/caravan-lib.git
+[submodule "json"]
+	path = json
+	url = git@github.com:nlohmann/json.git

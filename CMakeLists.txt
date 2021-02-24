@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(cpp)
+project(sim_game_ternary_reputation_model)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 find_package(OpenMP REQUIRED)
 find_package(MPI REQUIRED)
-include_directories(${CMAKE_SOURCE_DIR}/icecream /usr/local/include/eigen3)
+include_directories(${CMAKE_SOURCE_DIR}/icecream /usr/local/include/eigen3 ${CMAKE_SOURCE_DIR}/json/include ${CMAKE_SOURCE_DIR}/caravan-lib)
 
 set(SOURCE_FILES ReputationDynamics.hpp Game.hpp PopulationFlow.hpp)
 
