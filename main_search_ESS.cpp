@@ -134,13 +134,12 @@ int main(int argc, char *argv[]) {
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  const std::vector<uint64_t> repd_ids = LoadInputFiles(argv[1]);
-  IC("load");
-
-  std::ofstream fout("ESS_ids");
-
+  std::ofstream fout;
   using json = nlohmann::json;
-  std::function<void(caravan::Queue&)> on_init = [&repd_ids](caravan::Queue& q) {
+
+  std::function<void(caravan::Queue&)> on_init = [&argv,&fout](caravan::Queue& q) {
+    const std::vector<uint64_t> repd_ids = LoadInputFiles(argv[1]);
+    fout.open("ESS_ids");
     for(uint64_t id : repd_ids) {
       json input = id;
       q.Push(input);
@@ -152,9 +151,8 @@ int main(int argc, char *argv[]) {
       fout << o.at(0).get<uint64_t>() << ' ' << o.at(1).get<double>() << ' ' << o.at(2).get<double>() << ' ' << o.at(3).get<double>() << ' ' << o.at(4).get<double>() << "\n";
     }
   };
-  std::function<json(const json&)> do_task = [my_rank](const json& input) {
+  std::function<json(const json&)> do_task = [](const json& input) {
     uint64_t repd_id = input.get<uint64_t>();
-    IC(repd_id, my_rank);
     ReputationDynamics rd(repd_id);
     auto ans = find_ESSs(rd);
     json result;
