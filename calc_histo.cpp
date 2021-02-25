@@ -441,9 +441,9 @@ int main(int argc, char* argv[]) {
   std::vector<Input> inputs;
 
   while(fin) {
-    uint64_t org_gid,gid;
+    uint64_t gid;
     double c_prob,h0,h1,h2;
-    fin >> org_gid >> gid >> c_prob >> h0 >> h1 >> h2;
+    fin >> gid >> c_prob >> h0 >> h1 >> h2;
     if (fin) {
       inputs.emplace_back(gid, c_prob, h0, h1, h2);
     }

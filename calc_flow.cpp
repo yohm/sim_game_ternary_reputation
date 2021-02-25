@@ -59,9 +59,9 @@ void CalcClassifyByFlowOrder(const std::string& fname) {
   std::vector<uint64_t> gids;
 
   while(fin) {
-    uint64_t org_gid, gid;
+    uint64_t gid;
     double c_prob, h0, h1, h2;
-    fin >> org_gid >> gid >> c_prob >> h0 >> h1 >> h2;
+    fin >> gid >> c_prob >> h0 >> h1 >> h2;
     gids.push_back(gid);
   }
 
@@ -151,10 +151,10 @@ void CalcDs(uint64_t gid, const std::string& fname) {
   constexpr double th_d = 0.03;
 
   while(fin) {
-    uint64_t org_gid,gid2;
+    uint64_t gid;
     double c_prob,h0,h1,h2;
-    fin >> org_gid >> gid2 >> c_prob >> h0 >> h1 >> h2;
-    PopulationFlow other = GetRepFlow(gid2);
+    fin >> gid >> c_prob >> h0 >> h1 >> h2;
+    PopulationFlow other = GetRepFlow(gid);
     auto d_pair = rf.MaxD(other);
     /*
     if (d_pair.first < th_d) {
