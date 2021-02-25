@@ -128,9 +128,9 @@ int main(int argc, char *argv[]) {
 
   auto start = std::chrono::system_clock::now();
 
-  if (argc != 2) {
+  if (argc != 3) {
     std::cerr << "invalid number of arguments" << std::endl;
-    std::cerr << "  usage: " << argv[0] << " <reputation dynamics id list>" << std::endl;
+    std::cerr << "  usage: " << argv[0] << " <reputation dynamics id list> <chunk size>" << std::endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
@@ -140,9 +140,18 @@ int main(int argc, char *argv[]) {
   std::function<void(caravan::Queue&)> on_init = [&argv,&fout](caravan::Queue& q) {
     const std::vector<uint64_t> repd_ids = LoadInputFiles(argv[1]);
     fout.open("ESS_ids");
+    const size_t chunk_size = std::stoul(argv[2]);
+
+    json buf;
     for(uint64_t id : repd_ids) {
-      json input = id;
-      q.Push(input);
+      buf.emplace_back(id);
+      if (buf.size() == chunk_size) {
+        q.Push(buf);
+        buf.clear();
+      }
+    }
+    if (!buf.empty()) {
+      q.Push(buf);
     }
   };
   std::function<void(int64_t, const json&, const json&, caravan::Queue&)> on_result_receive = [&fout](int64_t task_id, const json& input, const json& output, caravan::Queue& q) {
@@ -152,11 +161,13 @@ int main(int argc, char *argv[]) {
     }
   };
   std::function<json(const json&)> do_task = [](const json& input) {
-    uint64_t repd_id = input.get<uint64_t>();
-    ReputationDynamics rd(repd_id);
-    auto ans = find_ESSs(rd);
+    std::vector<uint64_t> repd_ids;
+    for (const auto in: input) {
+      repd_ids.emplace_back( in.get<uint64_t>() );
+    }
+    std::vector<Output> outs = SearchRepDsOpenMP(repd_ids);
     json result;
-    for (const Output& out: ans.first) {
+    for (const Output& out: outs) {
       result.emplace_back( std::make_tuple(out.gid, out.cprob, out.h[0], out.h[1], out.h[2]) );
     }
     return result;
