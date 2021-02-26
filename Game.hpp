@@ -129,6 +129,19 @@ class Game {
     }
     return true;
   }
+  double MinPayoffDiff(double benefit, double cost) { // an index of evolutionary stability
+    CalcHStarResident();
+    double res_payoff = (benefit-cost) * resident_coop_prob;
+    double min = std::numeric_limits<double>::max();
+    for (int i = 0; i < 512; i++) {
+      // if (i % 100 == 0 ) { std::cerr << "checking mutant " << i << std::endl; }
+      if (i == resident_ar.ID()) continue;
+      ActionRule mut_ar(i);
+      double d = res_payoff - MutantPayoff(mut_ar, benefit, cost);
+      if (d < min) min = d;
+    }
+    return min;
+  }
   v3d_t ResidentEqReputation() { CalcHStarResident(); return resident_h_star; } // equilibrium reputation of resident species
   v3d_t ResidentEqReputation() const {
     if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");

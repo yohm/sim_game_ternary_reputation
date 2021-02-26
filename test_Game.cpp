@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
     assert( Close(mut_h[2], 0.573) );
 
     assert( g.IsESS(2.0, 1.0) == false );
+    assert( Close(g.MinPayoffDiff(2.0, 1.0), -0.199) );
 
     uint64_t new_rd_id = g.rep_dynamics.Permute({1,0,2}).ID();
     uint64_t new_ar_id = g.resident_ar.Permute({1,0,2}).ID();
@@ -153,6 +154,7 @@ int main(int argc, char *argv[]) {
     assert(g2.ResidentCoopProb() > 0.95);
 
     assert(g2.IsESS(1.2, 1.0));
+    assert(Close(g2.MinPayoffDiff(1.2, 1.0), 0.0001) );
 
     auto rep_act = g2.TraceReputationAndAction(Reputation::B, Reputation::G);
     assert( rep_act.first[0] == Reputation::B );
