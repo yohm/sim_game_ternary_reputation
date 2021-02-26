@@ -55,17 +55,20 @@ class Output {
   bool operator<(const Output& rhs) const { return gid < rhs.gid; }
 };
 
-std::pair<std::vector<Output>, uint64_t> find_ESSs(const ReputationDynamics& rd) {
-  const double mu_e = 0.02, mu_a = 0.02, benefit = 1.2, cost = 1.0;
-  const double coop_prob_th = 0.9;
+struct Param {
+  double mu_e, mu_a, benefit, cost, coop_prob_th;
+  Param(double _mu_e, double _mu_a, double _benefit, double _cost, double _coop_prob_th) :
+  mu_e(_mu_e), mu_a(_mu_a), benefit(_benefit), cost(_cost), coop_prob_th(_coop_prob_th) {};
+};
 
+std::pair<std::vector<Output>, uint64_t> find_ESSs(const ReputationDynamics& rd, const Param& prm) {
   std::vector<Output> ess_ids;
   uint64_t num_total = 0ull;
   std::vector<ActionRule> act_rules = ActionRuleCandidates(rd);
   for (const ActionRule& ar: act_rules) {
     num_total++;
-    Game g(mu_e, mu_a, rd, ar);
-    if (g.ResidentCoopProb() > coop_prob_th && g.IsESS(benefit, cost)) {
+    Game g(prm.mu_e, prm.mu_a, rd, ar);
+    if (g.ResidentCoopProb() > prm.coop_prob_th && g.IsESS(prm.benefit, prm.cost)) {
       Game new_g = g.NormalizedGame();
       ess_ids.emplace_back(new_g);
     }
@@ -91,7 +94,7 @@ std::vector<uint64_t> LoadInputFiles(const char* fname) {
   return std::move(rep_ids);
 }
 
-std::vector<Output> SearchRepDsOpenMP(const std::vector<uint64_t>& repd_ids) {
+std::vector<Output> SearchRepDsOpenMP(const std::vector<uint64_t>& repd_ids, const Param& prm) {
   int num_threads;
   #pragma omp parallel shared(num_threads) default(none)
   { num_threads = omp_get_num_threads(); };
@@ -99,12 +102,12 @@ std::vector<Output> SearchRepDsOpenMP(const std::vector<uint64_t>& repd_ids) {
   std::vector<std::vector<Output>> outs_thread(num_threads);
   // std::vector<uint64_t> ESS_ids;
 
-  #pragma omp parallel for shared(outs_thread,repd_ids) default(none) schedule(dynamic)
+  #pragma omp parallel for shared(outs_thread,repd_ids,prm) default(none) schedule(dynamic)
   for (size_t i = 0; i <repd_ids.size(); i++) {
     int th = omp_get_thread_num();
     ReputationDynamics rd(repd_ids[i]);
 
-    auto ans = find_ESSs(rd);
+    auto ans = find_ESSs(rd,prm);
     outs_thread[th].insert(outs_thread[th].end(), ans.first.begin(), ans.first.end());
   }
 
@@ -115,6 +118,40 @@ std::vector<Output> SearchRepDsOpenMP(const std::vector<uint64_t>& repd_ids) {
   return std::move(outs);
 }
 
+using json = nlohmann::json;
+
+Param BcastParameters(char* input_json_path) {
+  std::vector<uint8_t> opt_buf;
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  if (rank == 0) {
+    json j;
+    std::ifstream fin(input_json_path);
+    if (!fin) {
+      std::cerr << "failed to open " << input_json_path << "\n";
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    fin >> j;
+    opt_buf = std::move(json::to_msgpack(j));
+    uint64_t size = opt_buf.size();
+    MPI_Bcast(&size, 1, MPI_UINT64_T, 0, MPI_COMM_WORLD);
+    MPI_Bcast(opt_buf.data(), opt_buf.size(), MPI_BYTE, 0, MPI_COMM_WORLD);
+  } else {
+    uint64_t size = 0;
+    MPI_Bcast(&size, 1, MPI_UINT64_T, 0, MPI_COMM_WORLD);
+    opt_buf.resize(size);
+    MPI_Bcast(opt_buf.data(), opt_buf.size(), MPI_BYTE, 0, MPI_COMM_WORLD);
+  }
+  json j = json::from_msgpack(opt_buf);
+  return Param(
+    j.at("mu_e").get<double>(),
+    j.at("mu_a").get<double>(),
+    j.at("benefit").get<double>(),
+    j.at("cost").get<double>(),
+    j.at("coop_prob_th").get<double>()
+    );
+}
 
 int main(int argc, char *argv[]) {
 
@@ -128,19 +165,20 @@ int main(int argc, char *argv[]) {
 
   auto start = std::chrono::system_clock::now();
 
-  if (argc != 3) {
+  if (argc != 4) {
     std::cerr << "invalid number of arguments" << std::endl;
-    std::cerr << "  usage: " << argv[0] << " <reputation dynamics id list> <chunk size>" << std::endl;
+    std::cerr << "  usage: " << argv[0] << " <reputation dynamics id list> <input_json> <chunk size>" << std::endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  std::ofstream fout;
-  using json = nlohmann::json;
+  Param prm = BcastParameters(argv[2]);
+  const size_t chunk_size = std::stoul(argv[3]);
 
-  std::function<void(caravan::Queue&)> on_init = [&argv,&fout](caravan::Queue& q) {
+  std::ofstream fout;
+
+  std::function<void(caravan::Queue&)> on_init = [&argv,chunk_size,&fout](caravan::Queue& q) {
     const std::vector<uint64_t> repd_ids = LoadInputFiles(argv[1]);
     fout.open("ESS_ids");
-    const size_t chunk_size = std::stoul(argv[2]);
 
     json buf;
     for(uint64_t id : repd_ids) {
@@ -156,16 +194,15 @@ int main(int argc, char *argv[]) {
   };
   std::function<void(int64_t, const json&, const json&, caravan::Queue&)> on_result_receive = [&fout](int64_t task_id, const json& input, const json& output, caravan::Queue& q) {
     for (auto o: output) {
-      IC(o.dump());
       fout << o.at(0).get<uint64_t>() << ' ' << o.at(1).get<double>() << ' ' << o.at(2).get<double>() << ' ' << o.at(3).get<double>() << ' ' << o.at(4).get<double>() << "\n";
     }
   };
-  std::function<json(const json&)> do_task = [](const json& input) {
+  std::function<json(const json&)> do_task = [prm](const json& input) {
     std::vector<uint64_t> repd_ids;
     for (const auto in: input) {
       repd_ids.emplace_back( in.get<uint64_t>() );
     }
-    std::vector<Output> outs = SearchRepDsOpenMP(repd_ids);
+    std::vector<Output> outs = SearchRepDsOpenMP(repd_ids, prm);
     json result;
     for (const Output& out: outs) {
       result.emplace_back( std::make_tuple(out.gid, out.cprob, out.h[0], out.h[1], out.h[2]) );

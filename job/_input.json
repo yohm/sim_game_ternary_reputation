@@ -1,0 +1,7 @@
+{
+  "mu_e": 0.02,
+  "mu_a": 0.02,
+  "benefit": 1.2,
+  "cost": 1.0,
+  "coop_prob_th": 0.9
+}
