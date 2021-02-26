@@ -129,18 +129,19 @@ class Game {
     }
     return true;
   }
-  double MinPayoffDiff(double benefit, double cost) { // an index of evolutionary stability
+  std::pair<double,ActionRule> MinPayoffDiff(double benefit, double cost) { // an index of evolutionary stability
     CalcHStarResident();
     double res_payoff = (benefit-cost) * resident_coop_prob;
     double min = std::numeric_limits<double>::max();
+    ActionRule highest_mut = resident_ar;
     for (int i = 0; i < 512; i++) {
       // if (i % 100 == 0 ) { std::cerr << "checking mutant " << i << std::endl; }
       if (i == resident_ar.ID()) continue;
       ActionRule mut_ar(i);
       double d = res_payoff - MutantPayoff(mut_ar, benefit, cost);
-      if (d < min) min = d;
+      if (d < min) { min = d; highest_mut = mut_ar; }
     }
-    return min;
+    return std::make_pair(min, highest_mut);
   }
   v3d_t ResidentEqReputation() { CalcHStarResident(); return resident_h_star; } // equilibrium reputation of resident species
   v3d_t ResidentEqReputation() const {
