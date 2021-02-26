@@ -119,19 +119,11 @@ class Game {
     return Game(mu_e, mu_a, new_g_id, ResidentCoopProb(), new_h);
   }
   bool IsESS(double benefit, double cost) {
-    CalcHStarResident();
-    double res_payoff = (benefit-cost) * resident_coop_prob;
-    for (int i = 0; i < 512; i++) {
-      // if (i % 100 == 0 ) { std::cerr << "checking mutant " << i << std::endl; }
-      if (i == resident_ar.ID()) continue;
-      ActionRule mut_ar(i);
-      if (MutantPayoff(mut_ar, benefit, cost) > res_payoff) { return false; }
-    }
-    return true;
+    return MinPayoffDiff(benefit, cost).first > 0;
   }
   std::pair<double,ActionRule> MinPayoffDiff(double benefit, double cost) { // an index of evolutionary stability
     CalcHStarResident();
-    double res_payoff = (benefit-cost) * resident_coop_prob;
+    double res_payoff = MutantPayoff(resident_ar, benefit, cost);
     double min = std::numeric_limits<double>::max();
     ActionRule highest_mut = resident_ar;
     for (int i = 0; i < 512; i++) {
