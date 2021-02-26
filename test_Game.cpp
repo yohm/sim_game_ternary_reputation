@@ -16,6 +16,9 @@ int main(int argc, char *argv[]) {
        Game g(0.02, 0.02, id);
        g.ResidentEqReputation();
        std::cout << g.InspectMD();
+       auto min_pair = g.MinPayoffDiff(2.0, 1.0);
+       std::cout << "Min payoff difference b/c = 2: " << min_pair.first << "\n";
+       std::cout << min_pair.second.Inspect();
        PopulationFlow pf(g);
        std::cout << pf.InspectMD();
     }
