@@ -31,6 +31,3 @@ plt.xlabel("fraction of players")
 plt.ylabel("frequency")
 plt.legend()
 plt.savefig("h_distribution.png")
-# %%
-
-# %%
