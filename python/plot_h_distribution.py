@@ -15,6 +15,8 @@ plt.rcParams['ytick.major.width'] = 1.0
 plt.rcParams['axes.labelsize'] = 30
 plt.rcParams['font.size'] = 22
 plt.rcParams['axes.linewidth'] = 1.2
+plt.rcParams['savefig.dpi'] = 200
+plt.rcParams['figure.facecolor'] = 'white'
 # %%
 a = np.loadtxt("../job/ESS_ids_all.EqH")
 a
@@ -28,6 +30,7 @@ plt.xticks([0.0,0.5,1.0])
 plt.xlabel("fraction of players")
 plt.ylabel("frequency")
 plt.legend()
-plt.savefig("h_distribution.pdf")
+plt.savefig("h_distribution.png")
 # %%
+
 # %%
