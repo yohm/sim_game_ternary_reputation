@@ -12,15 +12,20 @@ bool Close(double d1, double d2, double tolerance = 1.0e-2) {
 int main(int argc, char *argv[]) {
   if (argc > 1) {
     for (size_t i = 1; i < argc; i++) {
-       uint64_t id = std::stoull(argv[i]);
-       Game g(0.02, 0.02, id);
-       g.ResidentEqReputation();
-       std::cout << g.InspectMD();
-       auto min_pair = g.MinPayoffDiff(2.0, 1.0);
-       std::cout << "Min payoff difference b/c = 2: " << min_pair.first << "\n";
-       std::cout << min_pair.second.Inspect();
-       PopulationFlow pf(g);
-       std::cout << pf.InspectMD();
+      uint64_t id = std::stoull(argv[i]);
+      Game g(0.02, 0.02, id);
+      g.ResidentEqReputation();
+      std::cout << g.InspectMD();
+      {
+        auto min_pair = g.MinPayoffDiff(2.0, 1.0);
+        std::cout << "Min payoff difference b/c = 2: " << min_pair.first << "\n";
+        std::cout << min_pair.second.Inspect();
+      }
+      IC( g.MutantPayoff(ActionRule(0), 2.0, 1.0),
+          g.MutantPayoff(ActionRule(511), 2.0, 1.0),
+          g.MutantPayoff(ActionRule(g.resident_ar), 2.0, 1.0) );
+      PopulationFlow pf(g);
+      std::cout << pf.InspectMD();
     }
     return 0;
   }
