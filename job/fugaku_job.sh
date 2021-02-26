@@ -8,4 +8,4 @@
 
 export OMP_NUM_THREADS=12
 
-mpiexec -stdout-proc ./%/1000R/stdout -stderr-proc ./%/1000R/stderr ../main_search_ESS.out ../RD_list 1000
+mpiexec -stdout-proc ./%/1000R/stdout -stderr-proc ./%/1000R/stderr ../main_search_ESS.out ../RD_list _input.json 1000
