@@ -21,6 +21,9 @@ target_link_libraries(calc_histo.out PRIVATE OpenMP::OpenMP_CXX)
 add_executable(calc_flow.out calc_flow.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
 target_link_libraries(calc_flow.out PRIVATE OpenMP::OpenMP_CXX)
 
+add_executable(sort_ESSs.out sort_ESSs.cpp)
+add_executable(diff_ESSs.out diff_ESSs.cpp)
+
 add_executable(print_normalized_RD.out print_normalized_RD.cpp ReputationDynamics.hpp)
 
 add_executable(test_ReputationDynamics.out test_ReputationDynamics.cpp ReputationDynamics.hpp)
