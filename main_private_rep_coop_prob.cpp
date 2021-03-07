@@ -176,11 +176,18 @@ void CalcPrivRepCoopLevel(const std::string& fname, const std::string& outname) 
     }
   };
 
-  std::function<void(int64_t, const json &, const json &, caravan::Queue &)> on_result_receive = [&outputs](
+  long num_done = 0;
+  std::function<void(int64_t, const json &, const json &, caravan::Queue &)> on_result_receive = [&outputs, &num_done](
     int64_t task_id, const json &input, const json &output, caravan::Queue &q) {
     output_t out = std::make_pair(input.get<uint64_t>(), std::array<double, 3>(
       {output.at(0).get<double>(), output.at(1).get<double>(), output.at(2).get<double>()}));
     outputs[task_id] = std::move(out);
+
+    // show progress
+    double progress_before = static_cast<double>(num_done) / outputs.size();
+    num_done++;
+    double progress = static_cast<double>(num_done) / outputs.size();
+    if ( int(progress_before*10) < int(progress*10) ) { std::cerr << "progress: " << int(progress * 100) << "%" << std::endl; }
   };
   std::function<json(const json &)> do_task = [](const json &input) {
     uint64_t strategy_id = input.get<uint64_t>();
