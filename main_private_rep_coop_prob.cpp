@@ -5,7 +5,10 @@
 #include <map>
 #include <cstdint>
 #include <icecream.hpp>
+#include <mpi.h>
 #include "Strategy.hpp"
+#include <caravan.hpp>
+
 
 
 class PrivateRepGame {
@@ -111,7 +114,7 @@ class PrivateRepGame {
 };
 
 
-void Simulate(uint64_t strategy_id, const std::string& snapshot_filename = "") {
+std::array<double,3> Simulate(uint64_t strategy_id) {
   const size_t N = 90;
   const size_t t_init = N * 10'000;
   const double q = 0.9;
@@ -123,31 +126,84 @@ void Simulate(uint64_t strategy_id, const std::string& snapshot_filename = "") {
   g.RestCoopCount();
 
   PrivateRepGame::rep_count_t rep_count;
-  const size_t N_measure = 1000, delta_t = 100 * N;
-  for (size_t i = 0; i < N_measure; i++) {
-    g.Update(delta_t, q, epsilon);
-    g.CountUpGoodRepSpeciesWise(rep_count);
-  }
+  const size_t N_measure = N * 10'000;
+  g.Update(N_measure, q, epsilon);
 
   auto coop_count = g.GetCoopCount();
-  IC(coop_count, rep_count);
+  // IC(coop_count, rep_count);
 
-  std::cout << static_cast<double>(coop_count.at({strategy_id,strategy_id}).at(0)) / (coop_count.at({strategy_id,strategy_id}).at(1)) << ' '
-            << static_cast<double>(coop_count.at({strategy_id,all_c}).at(0)) / (coop_count.at({strategy_id,all_c}).at(1)) << ' '
-            << static_cast<double>(coop_count.at({strategy_id,all_d}).at(0)) / (coop_count.at({strategy_id,all_d}).at(1)) << std::endl;
+  std::array<double,3> coop_probs;
+  coop_probs[0] = static_cast<double>(coop_count.at({strategy_id,strategy_id}).at(0)) / (coop_count.at({strategy_id,strategy_id}).at(1));
+  coop_probs[1] = static_cast<double>(coop_count.at({strategy_id,all_c}).at(0)) / (coop_count.at({strategy_id,all_c}).at(1));
+  coop_probs[2] = static_cast<double>(coop_count.at({strategy_id,all_d}).at(0)) / (coop_count.at({strategy_id,all_d}).at(1));
 
-  if (!snapshot_filename.empty()) {
-    std::ofstream fout(snapshot_filename);
-    g.PrintM(fout);
-    fout.close();
-  }
+  return coop_probs;
 }
 
 int main(int argc, char* argv[]) {
 
-  // Simulate(146030590244ull);
-  icecream::ic.disable();
-  Simulate(149044421540ull);
+  MPI_Init(&argc, &argv);
+
+  if (argc != 2) {
+    std::cerr << "wrong number of arguments" << std::endl;
+    std::cerr << "  usage: " << argv[0] << " <ESS_ids_file>" << std::endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
+  int my_rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+  std::vector<uint64_t> inputs;
+
+  if (my_rank == 0) {
+    std::ifstream fin(argv[1]);
+    if (!fin) {
+      std::cerr << "Failed to open file " << argv[1] << std::endl;
+      throw std::runtime_error("failed to open file");
+    }
+
+    while (fin) {
+      uint64_t gid;
+      double c_prob, h0, h1, h2;
+      fin >> gid >> c_prob >> h0 >> h1 >> h2;
+      if (fin) {
+        inputs.emplace_back(gid);
+      }
+    }
+  }
+  // IC(inputs);
+
+  using output_t = std::pair<uint64_t,std::array<double,3>>;
+  std::vector<output_t> outputs(inputs.size());
+
+  using json = nlohmann::json;
+  std::function<void(caravan::Queue&)> on_init = [&inputs](caravan::Queue& q) {
+    for (uint64_t str_id: inputs) {
+      json buf = str_id;
+      q.Push(buf);
+    }
+  };
+
+  std::function<void(int64_t, const json&, const json&, caravan::Queue&)> on_result_receive = [&outputs](int64_t task_id, const json& input, const json& output, caravan::Queue& q) {
+    output_t out = std::make_pair(input.get<uint64_t>(), std::array<double,3>({output.at(0).get<double>(), output.at(1).get<double>(), output.at(2).get<double>()}) );
+    outputs[task_id] = std::move(out);
+  };
+  std::function<json(const json&)> do_task = [](const json& input) {
+    uint64_t strategy_id = input.get<uint64_t>();
+    std::array<double,3> coop_probs = Simulate(strategy_id);
+    json output;
+    for (double c: coop_probs) { output.emplace_back(c); }
+    return output;
+  };
+
+  caravan::Start(on_init, on_result_receive, do_task, MPI_COMM_WORLD, 384, 2);
+
+  for (const output_t& o: outputs) {
+    std::cout << o.first << ' ' << o.second[0] << ' ' << o.second[1] << ' ' << o.second[2] << "\n";
+  }
+  std::cout.flush();
+
+  MPI_Finalize();
 
   return 0;
 }

@@ -488,7 +488,7 @@ int main(int argc, char* argv[]) {
     std::ofstream fout(std::string("DP_") + key);
     int count = 0;
     for (const Input& input: kv.second) {
-      fout << input.gid << ' ' << input.gid << ' ' << input.c_prob << ' ' << input.h.at(0) << ' ' << input.h.at(1) << ' ' << input.h.at(2) << std::endl;
+      fout << input.gid << ' ' << input.c_prob << ' ' << input.h.at(0) << ' ' << input.h.at(1) << ' ' << input.h.at(2) << std::endl;
       count++;
       if (count == OUT_SIZE_TH) break;
     }
