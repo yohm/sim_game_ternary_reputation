@@ -14,6 +14,11 @@ enum class Action {
   C = 1   // cooperate
 };
 
+Action FlipAction(Action a) {
+  if (a == Action::C) { return Action::D; }
+  else { return Action::C; }
+}
+
 enum class Reputation {
   B = 0,   // bad
   N = 1,   // normal
@@ -247,6 +252,10 @@ class Strategy {
     Reputation r_not = rd.RepAt(donor, recipient, a_not);
     return std::make_tuple(a, r, r_not);
   }
+  Action Act(Reputation donor, Reputation recipient) const { return ar.ActAt(donor, recipient); }
+  Reputation Assess(Reputation donor, Reputation recipient, Action act) const { return rd.RepAt(donor, recipient, act); }
+  static Strategy AllC() { return Strategy((387420488ull << 9ull) + 511ull); }
+  static Strategy AllD() { return Strategy(0); }
 };
 bool operator==(const Strategy& s1, const Strategy& s2) { return s1.ID() == s2.ID(); }
 bool operator!=(const Strategy& s1, const Strategy& s2) { return !(s1 == s2); }
