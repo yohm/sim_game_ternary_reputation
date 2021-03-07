@@ -18,16 +18,17 @@ plt.rcParams['axes.linewidth'] = 1.2
 plt.rcParams['savefig.dpi'] = 200
 plt.rcParams['figure.facecolor'] = 'white'
 # %%
-a = np.loadtxt("../job/ESS_ids_all.EqH")
+a = np.loadtxt("../,result/job_b1.1/ESS_ids")
 a
 
 # %%
 n_bins = 100
-plt.hist(a[:,3], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label="Bad")
-plt.hist(a[:,5], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label="Good")
+plt.hist(a[:,2], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label="Bad")
+plt.hist(a[:,4], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label="Good")
 plt.xlim((0.0,1.0))
 plt.xticks([0.0,0.5,1.0])
 plt.xlabel("fraction of players")
 plt.ylabel("frequency")
 plt.legend()
 plt.savefig("h_distribution.png")
+# %%
