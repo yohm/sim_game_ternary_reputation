@@ -140,25 +140,17 @@ std::array<double,3> Simulate(uint64_t strategy_id) {
   return coop_probs;
 }
 
-int main(int argc, char* argv[]) {
-
-  MPI_Init(&argc, &argv);
-
-  if (argc != 2) {
-    std::cerr << "wrong number of arguments" << std::endl;
-    std::cerr << "  usage: " << argv[0] << " <ESS_ids_file>" << std::endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
-  }
-
+void CalcPrivRepCoopLevel(const std::string& fname, const std::string& outname) {
   int my_rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
   std::vector<uint64_t> inputs;
 
   if (my_rank == 0) {
-    std::ifstream fin(argv[1]);
+    std::cerr << "reading: " << fname << std::endl;
+    std::ifstream fin(fname);
     if (!fin) {
-      std::cerr << "Failed to open file " << argv[1] << std::endl;
+      std::cerr << "Failed to open file " << fname << std::endl;
       throw std::runtime_error("failed to open file");
     }
 
@@ -173,24 +165,26 @@ int main(int argc, char* argv[]) {
   }
   // IC(inputs);
 
-  using output_t = std::pair<uint64_t,std::array<double,3>>;
+  using output_t = std::pair<uint64_t, std::array<double, 3>>;
   std::vector<output_t> outputs(inputs.size());
 
   using json = nlohmann::json;
-  std::function<void(caravan::Queue&)> on_init = [&inputs](caravan::Queue& q) {
+  std::function<void(caravan::Queue &)> on_init = [&inputs](caravan::Queue &q) {
     for (uint64_t str_id: inputs) {
       json buf = str_id;
       q.Push(buf);
     }
   };
 
-  std::function<void(int64_t, const json&, const json&, caravan::Queue&)> on_result_receive = [&outputs](int64_t task_id, const json& input, const json& output, caravan::Queue& q) {
-    output_t out = std::make_pair(input.get<uint64_t>(), std::array<double,3>({output.at(0).get<double>(), output.at(1).get<double>(), output.at(2).get<double>()}) );
+  std::function<void(int64_t, const json &, const json &, caravan::Queue &)> on_result_receive = [&outputs](
+    int64_t task_id, const json &input, const json &output, caravan::Queue &q) {
+    output_t out = std::make_pair(input.get<uint64_t>(), std::array<double, 3>(
+      {output.at(0).get<double>(), output.at(1).get<double>(), output.at(2).get<double>()}));
     outputs[task_id] = std::move(out);
   };
-  std::function<json(const json&)> do_task = [](const json& input) {
+  std::function<json(const json &)> do_task = [](const json &input) {
     uint64_t strategy_id = input.get<uint64_t>();
-    std::array<double,3> coop_probs = Simulate(strategy_id);
+    std::array<double, 3> coop_probs = Simulate(strategy_id);
     json output;
     for (double c: coop_probs) { output.emplace_back(c); }
     return output;
@@ -198,12 +192,33 @@ int main(int argc, char* argv[]) {
 
   caravan::Start(on_init, on_result_receive, do_task, MPI_COMM_WORLD, 384, 2);
 
-  for (const output_t& o: outputs) {
-    std::cout << o.first << ' ' << o.second[0] << ' ' << o.second[1] << ' ' << o.second[2] << "\n";
+  if (my_rank == 0) {
+    std::ofstream fout(outname);
+    for (const output_t &o: outputs) {
+      fout << o.first << ' ' << o.second[0] << ' ' << o.second[1] << ' ' << o.second[2] << "\n";
+    }
+    fout.close();
   }
-  std::cout.flush();
+}
+
+
+int main(int argc, char* argv[]) {
+
+  MPI_Init(&argc, &argv);
+
+  if (argc < 2) {
+    std::cerr << "wrong number of arguments" << std::endl;
+    std::cerr << "  usage: " << argv[0] << " <ESS_ids_file ...>" << std::endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
+  for (int i = 1; i < argc; i++) {
+    std::string outname = std::string(argv[i]) + "_priv";
+    CalcPrivRepCoopLevel(argv[i], outname);
+  }
 
   MPI_Finalize();
 
   return 0;
 }
+
