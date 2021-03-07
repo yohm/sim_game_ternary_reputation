@@ -63,7 +63,7 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
     else if (std::regex_match(s, re2)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]), Z = c2r(s[4]);
       Action a = c2a(s[2]);
-      if (g.rep_dynamics.RepAt(X, Y, a) != Z) { return s; }
+      if (g.strategy.rd.RepAt(X, Y, a) != Z) { return s; }
     }
     else if (std::regex_match(s, m, re3)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
@@ -74,7 +74,7 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
     else if (std::regex_match(s, m, re4)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
       Action a = c2a(s[2]);
-      Reputation Z = g.rep_dynamics.RepAt(X, Y, a);
+      Reputation Z = g.strategy.rd.RepAt(X, Y, a);
       if ( !IsIn(Z, m[1].str()) ) { return s; }
     }
     else if (std::regex_match(s, re5)) {
@@ -83,7 +83,7 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
       if (s[3] != '*' && std::get<0>(p) != c2a(s[3])) { return s; }
       if (s[4] != '*' && std::get<1>(p) != c2r(s[4])) { return s; }
       Action a_not = (std::get<0>(p) == Action::C) ? Action::D : Action::C;
-      if (g.rep_dynamics.RepAt(X,Y,a_not) != c2r(s[6])) { return s; }
+      if (g.strategy.rd.RepAt(X,Y,a_not) != c2r(s[6])) { return s; }
     }
     else if (std::regex_match(s, m, re6)) {
       Reputation X = c2r(s[0]), Y = c2r(s[1]);
@@ -117,8 +117,8 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
 
 
 std::string ClassifyType(const Game& g) {
-  const ReputationDynamics rd = g.rep_dynamics;
-  const ActionRule ar = g.resident_ar;
+  const ReputationDynamics rd = g.strategy.rd;
+  const ActionRule ar = g.strategy.ar;
 
   const Reputation B = Reputation::B, N = Reputation::N, G = Reputation::G;
   const Action D = Action::D, C = Action::C;

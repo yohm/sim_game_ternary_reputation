@@ -13,13 +13,13 @@
 class Game {
   public:
   using v3d_t = std::array<double,3>;
-  Game(double mu_e, double mu_a, const ReputationDynamics& rd, const ActionRule& ar) : mu_e(mu_e), mu_a(mu_a), rep_dynamics(rd), resident_ar(ar) {
+  Game(double mu_e, double mu_a, const ReputationDynamics& rd, const ActionRule& ar) : mu_e(mu_e), mu_a(mu_a), strategy(rd, ar) {
     resident_h_star_ready = false;
   }
-  Game(double mu_e, double mu_a, uint64_t id) : mu_e(mu_e), mu_a(mu_a), rep_dynamics(id>>9ul), resident_ar(id&511ul) {
+  Game(double mu_e, double mu_a, uint64_t id) : mu_e(mu_e), mu_a(mu_a), strategy(id) {
     resident_h_star_ready = false;
   }
-  Game(double mu_e, double mu_a, uint64_t id, double coop_prob, const std::array<double,3>& h_star) : mu_e(mu_e), mu_a(mu_a), rep_dynamics(id>>9ull), resident_ar(id&511ull) {
+  Game(double mu_e, double mu_a, uint64_t id, double coop_prob, const std::array<double,3>& h_star) : mu_e(mu_e), mu_a(mu_a), strategy(id) {
     resident_coop_prob = coop_prob;
     resident_h_star = h_star;
     resident_h_star_ready = true;
@@ -29,7 +29,7 @@ class Game {
     const auto& h = resident_h_star;
     ss << "GameID: " << ID() << std::endl
        << "(mu_e, mu_a): (" << mu_e << ", " << mu_a << ")" << std::endl
-       << "(RD_id, AR_id): (" << rep_dynamics.ID() << ", " << resident_ar.ID() << ")" << std::endl
+       << "(RD_id, AR_id): (" << strategy.rd.ID() << ", " << strategy.ar.ID() << ")" << std::endl
        << "--- Transition of residents" << std::endl;
     for (int i = 0; i < 9; i++) {
       Reputation X = static_cast<Reputation>(i/3);
@@ -49,7 +49,7 @@ class Game {
   std::string InspectMD() const {
     std::stringstream ss;
     ss << "- GameID: " << ID() << "\n"
-       << "  - RD_id, AR_id: " << rep_dynamics.ID() << ", " << resident_ar.ID() << "\n"
+       << "  - RD_id, AR_id: " << strategy.rd.ID() << ", " << strategy.ar.ID() << "\n"
        << "- Prescriptions:\n\n"
        << "  | | | |\n"
        << "  |-|-|-|\n";
@@ -74,19 +74,12 @@ class Game {
     return ss.str();
   }
   uint64_t ID() const {
-    uint64_t ar_id = resident_ar.ID();
-    uint64_t rd_id = rep_dynamics.ID();
-    return (rd_id << 9) + ar_id;
+    return strategy.ID();
   }
   const double mu_e, mu_a;
-  const ReputationDynamics rep_dynamics;
-  const ActionRule resident_ar;
+  const Strategy strategy;
   std::tuple<Action,Reputation,Reputation> At(Reputation donor, Reputation recipient) const {
-    Action a = resident_ar.ActAt(donor, recipient);
-    Reputation r = rep_dynamics.RepAt(donor, recipient, a);
-    Action a_not = (a == Action::C) ? Action::D : Action::C;
-    Reputation r_not = rep_dynamics.RepAt(donor, recipient, a_not);
-    return std::make_tuple(a, r, r_not);
+    return strategy.At(donor, recipient);
   }
   Game NormalizedGame() const {
     auto h = ResidentEqReputation();
@@ -98,7 +91,7 @@ class Game {
     else { throw std::runtime_error("must not happen"); }
 
     Reputation Gn = static_cast<Reputation>(Gi);
-    Reputation Bn = rep_dynamics.RepAt(Gn, Gn, Action::D);
+    Reputation Bn = strategy.rd.RepAt(Gn, Gn, Action::D);
     if (Gn == Bn) { throw std::runtime_error("must not happen"); }
     int Bi = static_cast<int>(Bn);
     int Ni = 3 - Bi - Gi;
@@ -108,8 +101,8 @@ class Game {
     map[Ni] = 1;
     map[Bi] = 0;
 
-    ReputationDynamics new_repd = rep_dynamics.Permute(map);
-    ActionRule new_ar = resident_ar.Permute(map);
+    ReputationDynamics new_repd = strategy.rd.Permute(map);
+    ActionRule new_ar = strategy.ar.Permute(map);
     uint64_t ar_id = new_ar.ID();
     uint64_t rd_id = new_repd.ID();
     uint64_t new_g_id = (rd_id << 9) + ar_id;
@@ -123,12 +116,12 @@ class Game {
   }
   std::pair<double,ActionRule> MinPayoffDiff(double benefit, double cost) { // an index of evolutionary stability
     CalcHStarResident();
-    double res_payoff = MutantPayoff(resident_ar, benefit, cost);
+    double res_payoff = MutantPayoff(strategy.ar, benefit, cost);
     double min = std::numeric_limits<double>::max();
-    ActionRule highest_mut = resident_ar;
+    ActionRule highest_mut = strategy.ar;
     for (int i = 0; i < 512; i++) {
       // if (i % 100 == 0 ) { std::cerr << "checking mutant " << i << std::endl; }
-      if (i == resident_ar.ID()) continue;
+      if (i == strategy.ar.ID()) continue;
       ActionRule mut_ar(i);
       double d = res_payoff - MutantPayoff(mut_ar, benefit, cost);
       if (d < min) { min = d; highest_mut = mut_ar; }
@@ -157,18 +150,18 @@ class Game {
     v3d_t mut_rep = HStarMutant(mutant);
     // cooperation probability of mutant against resident
     double mut_res_coop = CooperationProb(mutant, mut_rep, resident_h_star); // cooperation prob of mutant for resident
-    double res_mut_coop = CooperationProb(resident_ar, resident_h_star, mut_rep); // cooperation prob of resident for mutant
+    double res_mut_coop = CooperationProb(strategy.ar, resident_h_star, mut_rep); // cooperation prob of resident for mutant
     return benefit * res_mut_coop - cost * mut_res_coop;
   }
   std::pair<std::array<Reputation,3>,std::array<Action,3>> TraceReputationAndAction(const Reputation& init, const Reputation& resident_rep) const {
     std::array<Reputation,3> rep_hist;
     std::array<Action,3> act_hist;
     rep_hist[0] = init;
-    act_hist[0] = resident_ar.ActAt(rep_hist[0], resident_rep);
-    rep_hist[1] = rep_dynamics.RepAt(rep_hist[0], resident_rep, act_hist[0]);
-    act_hist[1] = resident_ar.ActAt(rep_hist[1], resident_rep);
-    rep_hist[2] = rep_dynamics.RepAt(rep_hist[1], resident_rep, act_hist[1]);
-    act_hist[2] = resident_ar.ActAt(rep_hist[2], resident_rep);
+    act_hist[0] = strategy.ar.ActAt(rep_hist[0], resident_rep);
+    rep_hist[1] = strategy.rd.RepAt(rep_hist[0], resident_rep, act_hist[0]);
+    act_hist[1] = strategy.ar.ActAt(rep_hist[1], resident_rep);
+    rep_hist[2] = strategy.rd.RepAt(rep_hist[1], resident_rep, act_hist[1]);
+    act_hist[2] = strategy.ar.ActAt(rep_hist[2], resident_rep);
     return std::make_pair(rep_hist, act_hist);
   }
   std::array<double,3> ContinuationPayoff(double w, double benefit, double cost, double mu_e) const {  // calculate continuation payoff for each reputation taking into account implementation error
@@ -196,8 +189,8 @@ class Game {
       Reputation X = static_cast<Reputation>(x);
       for (int y = 0; y < 3; y++) {
         Reputation Y = static_cast<Reputation>(y);
-        if (resident_ar.ActAt(Y, X) == Action::C) { V(x) += benefit * h[y] * (1.0-mu_e); }
-        if (resident_ar.ActAt(X, Y) == Action::C) { V(x) -= cost * h[y] * (1.0-mu_e); }
+        if (strategy.ar.ActAt(Y, X) == Action::C) { V(x) += benefit * h[y] * (1.0-mu_e); }
+        if (strategy.ar.ActAt(X, Y) == Action::C) { V(x) -= cost * h[y] * (1.0-mu_e); }
       }
     }
 
@@ -215,7 +208,7 @@ class Game {
       return HdotResident(x);
     };
     resident_h_star = SolveByRungeKutta(func);
-    resident_coop_prob = CooperationProb(resident_ar, resident_h_star, resident_h_star);
+    resident_coop_prob = CooperationProb(strategy.ar, resident_h_star, resident_h_star);
     resident_h_star_ready = true;
   }
   v3d_t HdotResident(const std::array<double,3>& ht) const {
@@ -226,8 +219,8 @@ class Game {
         Reputation Y = static_cast<Reputation>(j);
         for (int k = 0; k < 3; k++) {
           Reputation Z = static_cast<Reputation>(k);
-          int b1 = (rep_dynamics.RepAt(X, Y, resident_ar.ActAt(X, Y)) == Z) ? 1 : 0;
-          int b2 = (rep_dynamics.RepAt(X, Y, Action::D) == Z) ? 1 : 0;
+          int b1 = (strategy.rd.RepAt(X, Y, strategy.ar.ActAt(X, Y)) == Z) ? 1 : 0;
+          int b2 = (strategy.rd.RepAt(X, Y, Action::D) == Z) ? 1 : 0;
           ht_dot[k] += ht[i] * ht[j] * ( (1.0-1.5*mu_a)*((1.0-mu_e)*b1+ mu_e*b2) + 0.5*mu_a);
         }
       }
@@ -242,8 +235,8 @@ class Game {
         Reputation Y = static_cast<Reputation>(j);
         for (int k = 0; k < 3; k++) {
           Reputation Z = static_cast<Reputation>(k);
-          int b1 = (rep_dynamics.RepAt(X, Y, mutant_action_rule.ActAt(X, Y)) == Z) ? 1 : 0;
-          int b2 = (rep_dynamics.RepAt(X, Y, Action::D) == Z) ? 1 : 0;
+          int b1 = (strategy.rd.RepAt(X, Y, mutant_action_rule.ActAt(X, Y)) == Z) ? 1 : 0;
+          int b2 = (strategy.rd.RepAt(X, Y, Action::D) == Z) ? 1 : 0;
           ht_dot[k] += ht[i] * resident_h_star[j] * ((1.0 - 1.5 * mu_a) * ((1.0 - mu_e) * b1 + mu_e * b2) + 0.5 * mu_a);
         }
       }

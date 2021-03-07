@@ -19,17 +19,17 @@ class PopulationFlow {
       Reputation X = static_cast<Reputation>(i);
       for (int j = 0; j < 3; j++) {
         Reputation Y = static_cast<Reputation>(j);
-        Action act = g.resident_ar.ActAt(X,Y);
+        Action act = g.strategy.ar.ActAt(X,Y);
         for (int k = 0; k < 3; k++) {
           Reputation Z = static_cast<Reputation>(k);
           if (act == Action::C) {
-            if (g.rep_dynamics.RepAt(X,Y,Action::C) == Z) {
+            if (g.strategy.rd.RepAt(X,Y,Action::C) == Z) {
               w[Idx(X,Z,Action::C)] += h_star[i] * h_star[j] * (1.0-g.mu_e) * (1.0-g.mu_a);
             }
             else {
               w[Idx(X,Z,Action::C)] += h_star[i] * h_star[j] * (1.0-g.mu_e) * 0.5 * g.mu_a;
             }
-            if (g.rep_dynamics.RepAt(X,Y,Action::D) == Z) {
+            if (g.strategy.rd.RepAt(X,Y,Action::D) == Z) {
               w[Idx(X,Z,Action::D)] += h_star[i] * h_star[j] * g.mu_e * (1.0-g.mu_a);
             }
             else {
@@ -37,7 +37,7 @@ class PopulationFlow {
             }
           }
           else {  // act == Action::D
-            if (g.rep_dynamics.RepAt(X,Y,Action::D) == Z) {
+            if (g.strategy.rd.RepAt(X,Y,Action::D) == Z) {
               w[Idx(X,Z,Action::D)] += h_star[i] * h_star[j] * (1.0-g.mu_a);
             }
             else {

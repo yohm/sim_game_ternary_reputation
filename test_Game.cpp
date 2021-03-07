@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
       }
       IC( g.MutantPayoff(ActionRule(0), 2.0, 1.0),
           g.MutantPayoff(ActionRule(511), 2.0, 1.0),
-          g.MutantPayoff(ActionRule(g.resident_ar), 2.0, 1.0) );
+          g.MutantPayoff(ActionRule(g.strategy.ar), 2.0, 1.0) );
       PopulationFlow pf(g);
       std::cout << pf.InspectMD();
     }
@@ -47,8 +47,8 @@ int main(int argc, char *argv[]) {
     assert(g.ID() == 166243799309);
 
     Game g2(0.02, 0.02, 166243799309);
-    assert(g.rep_dynamics == g2.rep_dynamics);
-    assert(g.resident_ar == g2.resident_ar);
+    assert(g.strategy.rd == g2.strategy.rd);
+    assert(g.strategy.ar == g2.strategy.ar);
 
     auto ht = g.ResidentEqReputation();
     assert( Close(ht[0], 0.077) );
@@ -65,8 +65,8 @@ int main(int argc, char *argv[]) {
     assert( g.IsESS(2.0, 1.0) == false );
     assert( Close(g.MinPayoffDiff(2.0, 1.0).first, -0.199) );
 
-    uint64_t new_rd_id = g.rep_dynamics.Permute({1,0,2}).ID();
-    uint64_t new_ar_id = g.resident_ar.Permute({1,0,2}).ID();
+    uint64_t new_rd_id = g.strategy.rd.Permute({1,0,2}).ID();
+    uint64_t new_ar_id = g.strategy.ar.Permute({1,0,2}).ID();
     uint64_t new_id = (new_rd_id << 9ul) + new_ar_id;  // == 147150009650
     Game g_norm = g.NormalizedGame();
     assert(new_id == g_norm.ID() );

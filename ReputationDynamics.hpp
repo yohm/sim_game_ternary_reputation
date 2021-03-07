@@ -214,4 +214,41 @@ class ReputationDynamics {
 bool operator==(const ReputationDynamics& t1, const ReputationDynamics& t2) { return t1.ID() == t2.ID(); }
 bool operator!=(const ReputationDynamics& t1, const ReputationDynamics& t2) { return !(t1 == t2); }
 
+// Strategy is a set of ReputationDynamics & ActionRule
+class Strategy {
+  public:
+  Strategy(const ReputationDynamics& rep_d, const ActionRule& act_r) : rd(rep_d.ID()), ar(act_r.ID()) {};
+  Strategy(uint64_t id) : rd(id>>9ull), ar(id&511ull) {};
+  ReputationDynamics rd;
+  ActionRule ar;
+  uint64_t ID() const {
+    uint64_t ar_id = ar.ID();
+    uint64_t rd_id = rd.ID();
+    return (rd_id << 9ull) + ar_id;
+  }
+  std::string Inspect() const {
+    std::stringstream ss;
+    ss << "StrategyID: " << ID() << std::endl
+       << "(RD_id, AR_id): (" << rd.ID() << ", " << ar.ID() << ")" << std::endl
+       << "--- Transitions" << std::endl;
+    for (int i = 0; i < 9; i++) {
+      Reputation X = static_cast<Reputation>(i/3);
+      Reputation Y = static_cast<Reputation>(i%3);
+      auto p = At(X, Y);
+      ss << "(" << X << "->" << Y << "): " << std::get<0>(p) << std::get<1>(p) << ':' << std::get<2>(p);
+      ss << ((i % 3 == 2) ? "\n" : "\t");
+    }
+    return ss.str();
+  }
+  std::tuple<Action,Reputation,Reputation> At(Reputation donor, Reputation recipient) const {
+    Action a = ar.ActAt(donor, recipient);
+    Reputation r = rd.RepAt(donor, recipient, a);
+    Action a_not = (a == Action::C) ? Action::D : Action::C;
+    Reputation r_not = rd.RepAt(donor, recipient, a_not);
+    return std::make_tuple(a, r, r_not);
+  }
+};
+bool operator==(const Strategy& s1, const Strategy& s2) { return s1.ID() == s2.ID(); }
+bool operator!=(const Strategy& s1, const Strategy& s2) { return !(s1 == s2); }
+
 #endif
