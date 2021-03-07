@@ -65,3 +65,14 @@ Renumber the Game ID such that the most abundant reputation is G and the reputat
 ```shell
 ./recalculate_game_ids.out ESS_ids_file
 ```
+
+## main_private_rep_coop_prob.out
+
+Calculate cooperation level under private reputation where the focal strategy, AllC, and AllD coexists with equal fractions.
+
+```shell
+cd job_priv_rep
+# ... copy DP_* files to this directory  ...
+pjsub fugaku_job.sh
+```
+
