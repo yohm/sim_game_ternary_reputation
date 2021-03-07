@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include "ReputationDynamics.hpp"
+#include "Strategy.hpp"
 
 
 int main( int argc, char* argv[]) {

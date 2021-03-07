@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <icecream.hpp>
 #include <Eigen/Dense>
-#include "ReputationDynamics.hpp"
+#include "Strategy.hpp"
 
 class Game {
   public:

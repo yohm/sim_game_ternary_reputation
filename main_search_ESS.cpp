@@ -7,7 +7,7 @@
 #include <cassert>
 #include "omp.h"
 #include "mpi.h"
-#include "ReputationDynamics.hpp"
+#include "Strategy.hpp"
 #include "Game.hpp"
 #include <caravan.hpp>
 

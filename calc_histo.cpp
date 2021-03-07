@@ -11,7 +11,7 @@
 #include <omp.h>
 #include <icecream.hpp>
 
-#include "ReputationDynamics.hpp"
+#include "Strategy.hpp"
 #include "Game.hpp"
 #include "HistoNormalBin.hpp"
 
