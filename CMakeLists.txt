@@ -30,3 +30,5 @@ add_executable(test_ReputationDynamics.out test_Strategy.cpp Strategy.hpp)
 
 add_executable(test_Game.out test_Game.cpp Strategy.hpp Game.hpp)
 
+# private reputation
+add_executable(main_private_rep_coop_prob.out main_private_rep_coop_prob.cpp ${SOURCE_FILES})
