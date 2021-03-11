@@ -15,9 +15,11 @@ class PrivateRepGame {
   public:
   using population_t = std::vector<std::pair<uint64_t, size_t>>;  // vector of StrategyID & its size
   PrivateRepGame(const population_t& pop, uint64_t _seed) : population(pop), rnd(_seed), uni(0.0, 1.0) {
-    for (auto kv: population) {
+    for (size_t s = 0; s < population.size(); s++) {
+      auto kv = population[s];
       for (size_t i = 0; i < kv.second; i++) {
         strategies.emplace_back(kv.first);
+        strategy_index.emplace_back(s);
       }
     }
     N = strategies.size();
@@ -35,9 +37,9 @@ class PrivateRepGame {
 
       Action action = strategies[donor].Act( M[donor][donor], M[donor][recip] );
 
-      auto key = std::make_pair(strategies[donor].ID(), strategies[recip].ID());
-      if (action == Action::C) { coop_count[key][0]++; }
-      coop_count[key][1]++;
+      size_t s1 = strategy_index[donor], s2 = strategy_index[recip];
+      if (action == Action::C) { coop_count[s1][s2][0]++; }
+      coop_count[s1][s2][1]++;
 
       // updating the donor's reputation
       for (size_t obs = 0; obs < N; obs++) {
@@ -79,15 +81,27 @@ class PrivateRepGame {
 
   // key : pair of [donor_id, recipient_id]
   // value: [number of cooperation] / [number of actions (cooperation + defection)
-  std::map< std::pair<uint64_t,uint64_t>, std::array<size_t,2>> GetCoopCount() const { return coop_count; }
+  std::map< std::pair<uint64_t,uint64_t>, std::array<size_t,2>> GetCoopCount() const {
+    std::map< std::pair<uint64_t, uint64_t>, std::array<size_t,2>> ans;
+    for (size_t si = 0; si < coop_count.size(); si++) {
+      uint64_t si_id = population[si].first;
+      for (size_t sj = 0; sj < coop_count[si].size(); sj++) {
+        uint64_t sj_id = population[sj].first;
+        auto key = std::make_pair(si_id, sj_id);
+        ans[key] = coop_count[si][sj];
+      }
+    }
+    return ans;
+  }
 
   void RestCoopCount() {
     coop_count.clear();
-    for (auto kv_i: population) {
-      uint64_t species_i = kv_i.first;
-      for (auto kv_j: population) {
-        uint64_t species_j = kv_j.first;
-        coop_count[{species_i,species_j}] = {0, 0};
+    coop_count.resize(population.size());
+    for (auto& ci : coop_count) {
+      ci.resize(population.size());
+      for (auto& cij: ci) {
+        cij[0] = 0ul;
+        cij[1] = 0ul;
       }
     }
   }
@@ -107,10 +121,10 @@ class PrivateRepGame {
   std::mt19937_64 rnd;
   std::uniform_real_distribution<double> uni;
   std::vector<Strategy> strategies;
+  std::vector<size_t> strategy_index;  // strategy_index[i] == j : i-th player is a j-th species
   std::vector<std::vector<Reputation> > M;
-  std::map<std::pair<uint64_t,uint64_t>, std::array<size_t,2>> coop_count;
+  std::vector< std::vector< std::array<size_t,2> >> coop_count;
   double R01() { return uni(rnd); }
-
 };
 
 
