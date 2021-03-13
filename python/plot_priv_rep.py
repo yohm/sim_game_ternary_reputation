@@ -26,11 +26,13 @@ a
 # %%
 plt.clf()
 n_bins = 100
-plt.hist(a[:,1], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label="Coop_level")
+plt.hist(a[:,1], bins=n_bins, range=(0.0,1.0), log=False, alpha=0.9, density=False, label="Coop_level")
 plt.xlim((0.0,1.0))
 plt.xticks([0.0,0.5,1.0])
 plt.xlabel("cooperation level")
 plt.ylabel("frequency")
-plt.legend()
+# plt.legend()
 plt.show()
 # %%
+# s = a[np.argsort(a[:,1])][::-1]
+# s = np.sort(a[:,1])
