@@ -19,16 +19,18 @@ int main(int argc, char *argv[]) {
       PrivateRepGame::population_t population = {{strategy_id, N/3}, {all_c, N/3}, {all_d, N/3} };
       PrivateRepGame g(population, 123456789ull);
 
-      size_t t_init = 10'000;
+      size_t t_init = 1'000;
       g.Update(N * t_init, q, epsilon);
       g.ResetCoopCount();
       std::cerr << "initialization finished\n";
 
-      size_t t_measure = 10'000;
+      size_t t_measure = 1'000;
       g.Update(N * t_measure, q, epsilon);
 
       auto coop_count = g.GetCoopCount();
       // IC(coop_count, rep_count);
+
+      g.PrintM();
 
       std::array<double,3> coop_probs;
       coop_probs[0] = static_cast<double>(coop_count.at({strategy_id,strategy_id}).at(0)) / (coop_count.at({strategy_id,strategy_id}).at(1));
