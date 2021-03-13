@@ -20,18 +20,17 @@ plt.rcParams['axes.linewidth'] = 1.2
 plt.rcParams['savefig.dpi'] = 200
 plt.rcParams['figure.facecolor'] = 'white'
 # %%
-a = np.loadtxt("../,result/job_b1.1/ESS_ids")
+a = np.loadtxt("../job_priv_rep/DP_C1.P1.A1._priv")
+a
 
 # %%
 plt.clf()
 n_bins = 100
-plt.hist(a[:,2], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label="Bad")
-plt.hist(a[:,4], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label="Good")
+plt.hist(a[:,1], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label="Coop_level")
 plt.xlim((0.0,1.0))
 plt.xticks([0.0,0.5,1.0])
-plt.xlabel(r"$h_G^{\ast}, h_B^{\ast}$")
+plt.xlabel("cooperation level")
 plt.ylabel("frequency")
 plt.legend()
-# plt.show()
-plt.savefig("h_distribution.pdf")
+plt.show()
 # %%
