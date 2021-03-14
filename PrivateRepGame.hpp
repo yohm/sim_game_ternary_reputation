@@ -111,7 +111,7 @@ class PrivateRepGame {
   void PrintM(std::ostream& out = std::cerr) const {
     for (size_t i = 0; i < M.size(); i++) {
       for (size_t j = 0; j < M[i].size(); j++) {
-        out << M[i][j] << ' ';
+        out << static_cast<int>(M[i][j]);
       }
       out << "\n";
     }
