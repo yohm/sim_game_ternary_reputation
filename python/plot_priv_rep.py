@@ -20,19 +20,46 @@ plt.rcParams['axes.linewidth'] = 1.2
 plt.rcParams['savefig.dpi'] = 200
 plt.rcParams['figure.facecolor'] = 'white'
 # %%
-a = np.loadtxt("../job_priv_rep/DP_C1.P1.A1._priv")
-a
+def plot_hist(a):
+    plt.clf()
+    n_bins = 100
+    plt.hist(a[:,1], bins=n_bins, range=(0.0,1.0), log=False, alpha=0.9, density=False, label="Coop_level")
+    plt.xlim((0.0,1.0))
+    plt.xticks([0.0,0.5,1.0])
+    plt.xlabel("cooperation level")
+    plt.ylabel("frequency")
+    # plt.legend()
+    plt.show()
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C1.P1.A1._priv"))
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C1.P1.A2._priv") )
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C1.P2.A1._priv") )
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C1.P2.A2._priv") )
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C2.P1.A1._priv") )
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C2.P1.A2._priv") )
 
 # %%
-plt.clf()
-n_bins = 100
-plt.hist(a[:,1], bins=n_bins, range=(0.0,1.0), log=False, alpha=0.9, density=False, label="Coop_level")
-plt.xlim((0.0,1.0))
-plt.xticks([0.0,0.5,1.0])
-plt.xlabel("cooperation level")
-plt.ylabel("frequency")
-# plt.legend()
-plt.show()
+plot_hist( np.loadtxt("../job_priv_rep/DP_C2.P1.A3._priv") )
 # %%
-# s = a[np.argsort(a[:,1])][::-1]
-# s = np.sort(a[:,1])
+plot_hist( np.loadtxt("../job_priv_rep/DP_C2.P2.A1._priv") )
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C2.P2.A2._priv") )
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C2.P3.A1._priv") )
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C4.P1.A2._priv") )
+
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C4.P2.A1._priv") )
+
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C4.P2.A2._priv") )
+
+# %%
+plot_hist( np.loadtxt("../job_priv_rep/DP_C5.P1.A1._priv") )
+# %%
