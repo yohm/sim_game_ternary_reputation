@@ -198,6 +198,14 @@ class Game {
     ans_e *= (1.0 - w);  // normalize
     return {ans_e(0), ans_e(1), ans_e(2)};
   }
+  v3d_t CalcHStarFromInitialPoint(const v3d_t & init) {
+    std::function<std::array<double,3>(std::array<double,3>)> func = [this](std::array<double,3> x) {
+      return HdotResident(x);
+    };
+    auto ans = SolveByRungeKutta(func, init);
+    return ans;
+  }
+
   private:
   v3d_t resident_h_star; // equilibrium reputation of resident species
   double resident_coop_prob;  // cooperation probability of resident species
@@ -243,8 +251,8 @@ class Game {
     }
     return ht_dot;
   }
-  v3d_t SolveByRungeKutta(std::function<v3d_t (v3d_t)>& func) const {
-    v3d_t ht = {1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0};
+  v3d_t SolveByRungeKutta(std::function<v3d_t (v3d_t)>& func, const v3d_t& init = {1.0/3.0,1.0/3.0,1.0/3.0}) const {
+    v3d_t ht = init;
     const size_t N_ITER = 1'000'000;
     double dt = 0.01;
     const double conv_tolerance = 1.0e-6 * dt;

@@ -17,6 +17,11 @@ int main(int argc, char *argv[]) {
       g.ResidentEqReputation();
       std::cout << g.InspectMD();
       {
+        auto a100 = g.CalcHStarFromInitialPoint({1.0, 0.0, 0.0});
+        auto a055 = g.CalcHStarFromInitialPoint({0.0, 0.5, 0.5});
+        IC(a100, a055, g.ResidentEqReputation());
+      }
+      {
         auto min_pair = g.MinPayoffDiff(2.0, 1.0);
         std::cout << "Min payoff difference b/c = 2: " << min_pair.first << "\n";
         std::cout << min_pair.second.Inspect();
