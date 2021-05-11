@@ -174,13 +174,3 @@ Print the difference between two ID files.
 ./diff_ESS.out ESS_ids ESS_ids2
 ```
 
-
-### main_private_rep_coop_prob.out
-
-Calculate cooperation level under private reputation where the focal strategy, AllC, and AllD coexists with equal fractions.
-
-```shell
-cd job_priv_rep
-# ... copy DP_* files to this directory  ...
-pjsub fugaku_job.sh
-```
