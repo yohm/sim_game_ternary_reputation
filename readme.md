@@ -174,3 +174,6 @@ Print the difference between two ID files.
 ./diff_ESS.out ESS_ids ESS_ids2
 ```
 
+## Results
+
+In `result/` directory, there is the list of cooperative ESSs for b/c=1.1, mu_e=0.02, mu_a=0.02.
