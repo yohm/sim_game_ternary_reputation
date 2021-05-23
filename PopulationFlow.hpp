@@ -15,7 +15,6 @@ class PopulationFlow {
 
   PopulationFlow(const Game &_g) : g(_g) {
     for (size_t i = 0; i < w.size(); i++) { w[i] = 0.0; }
-    for (size_t i = 0; i < 54; i++) { assert( Idx( ToReps(i) ) == i ); }
 
     std::array<double,3> h_star = g.ResidentEqReputation();
     for (int i = 0; i < 3; i++) {
