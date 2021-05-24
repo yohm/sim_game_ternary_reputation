@@ -29,3 +29,6 @@ add_executable(print_normalized_RD.out print_normalized_RD.cpp Strategy.hpp)
 add_executable(test_Strategy.out test_Strategy.cpp Strategy.hpp)
 
 add_executable(test_Game.out test_Game.cpp Strategy.hpp Game.hpp)
+
+add_executable(check_initial_condition.out check_initial_condition.cpp Game.hpp Strategy.hpp)
+target_link_libraries(check_initial_condition.out PRIVATE OpenMP::OpenMP_CXX)
