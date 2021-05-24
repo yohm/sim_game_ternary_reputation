@@ -16,10 +16,24 @@ int main(int argc, char *argv[]) {
       Game g(0.02, 0.02, id);
       g.ResidentEqReputation();
       std::cout << g.InspectMD();
+      /*
+      {
+        const int N = 5;
+        const double N_inv = 1.0 / (double) N;
+        for (int i = 0; i <= N; i++) {
+          for (int j = 0; j <= (N - i); j++) {
+            int k = N - i - j;
+            auto a = g.CalcHStarFromInitialPoint({i * N_inv, j * N_inv, k * N_inv});
+            IC(a, i, j, k);
+          }
+        }
+      }
+       */
       {
         auto a100 = g.CalcHStarFromInitialPoint({1.0, 0.0, 0.0});
-        auto a055 = g.CalcHStarFromInitialPoint({0.0, 0.5, 0.5});
-        IC(a100, a055, g.ResidentEqReputation());
+        auto a010 = g.CalcHStarFromInitialPoint({0.0, 1.0, 0.0});
+        auto a001 = g.CalcHStarFromInitialPoint({0.0, 0.0, 1.0});
+        IC(a100, a010, a001, g.ResidentEqReputation());
       }
       {
         auto min_pair = g.MinPayoffDiff(2.0, 1.0);

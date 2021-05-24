@@ -33,19 +33,14 @@ void LoadFile(const char* fname, std::vector<input_t>& inputs) {
   }
 }
 
-int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    std::cerr << "wrong number of arguments" << std::endl;
-    std::cerr << "  usage: " << argv[0] << " <ESS_ids_file>" << std::endl;
-    throw std::runtime_error("wrong number of arguments");
-  }
-
+size_t CheckFile(const char* fname) {
   std::vector<input_t> inputs;
-  LoadFile(argv[1], inputs);
+  LoadFile(fname, inputs);
 
-  #pragma omp parallel for shared(inputs,std::cerr) default(none)
+  size_t n_detected = 0;
+  #pragma omp parallel for shared(inputs,std::cerr,n_detected) default(none)
   for (size_t n = 0; n < inputs.size(); n++) {
-    if (n % 1 == 0) { std::cerr << "progress: " << n << " / " << inputs.size() << std::endl; }
+    if (n % 1000 == 0) { std::cerr << "progress: " << n << " / " << inputs.size() << std::endl; }
     const input_t& input = inputs[n];
     Game g(0.02, 0.02, input.id, input.coop_prob, input.h);
 
@@ -57,11 +52,34 @@ int main(int argc, char *argv[]) {
         int k = N - i - j;
         auto a = g.CalcHStarFromInitialPoint({i*N_inv, j*N_inv, k*N_inv});
         if (!Close(a, base)) {
-          IC(base, a, i, j, k);
-          std::runtime_error("initial condition dependency is detected");
+          IC(input.id, base, a, i, j, k);
+          #pragma omp atomic update
+          n_detected++;
+          // throw std::runtime_error("initial condition dependency is detected");
         }
       }
     }
   }
+
+  return n_detected;
+}
+
+int main(int argc, char *argv[]) {
+  if (argc < 2) {
+    std::cerr << "wrong number of arguments" << std::endl;
+    std::cerr << "  usage: " << argv[0] << " <ESS_ids_file>" << std::endl;
+    throw std::runtime_error("wrong number of arguments");
+  }
+
+  for (int i = 1; i < argc; i++) {
+    size_t n_detected = CheckFile(argv[i]);
+    if (n_detected == 0) {
+      std::cerr << "[OK] " << argv[i] << " completed" << std::endl;
+    }
+    else {
+      std:: cerr << "[NG] " << argv[i] << " : " << n_detected << std::endl;
+    }
+  }
+
   return 0;
 }
