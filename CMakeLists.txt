@@ -26,6 +26,6 @@ add_executable(diff_ESSs.out diff_ESSs.cpp)
 
 add_executable(print_normalized_RD.out print_normalized_RD.cpp Strategy.hpp)
 
-add_executable(test_ReputationDynamics.out test_Strategy.cpp Strategy.hpp)
+add_executable(test_Strategy.out test_Strategy.cpp Strategy.hpp)
 
 add_executable(test_Game.out test_Game.cpp Strategy.hpp Game.hpp)
