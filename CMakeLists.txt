@@ -18,9 +18,6 @@ target_link_libraries(main_search_ESS.out PRIVATE OpenMP::OpenMP_CXX ${MPI_LIBRA
 add_executable(calc_histo.out calc_histo.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
 target_link_libraries(calc_histo.out PRIVATE OpenMP::OpenMP_CXX)
 
-add_executable(calc_flow.out calc_flow.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
-target_link_libraries(calc_flow.out PRIVATE OpenMP::OpenMP_CXX)
-
 add_executable(sort_ESSs.out sort_ESSs.cpp)
 add_executable(diff_ESSs.out diff_ESSs.cpp)
 

@@ -244,7 +244,7 @@ std::string ClassifyType(const Game& g) {
 
   // classify by GG:cG:B or GG:cN:B
   if (
-    /* Match(g, {"GG:cG:B"}).empty() && */ H[1] < 0.1  // G is dominant
+    H[1] < 0.1  // G is dominant
     )
   {
     key += "C1.";
@@ -291,7 +291,7 @@ std::string ClassifyType(const Game& g) {
     classify_by_apology_to_G();
   }
   else {
-    key += "99.";
+    key += "C99.";
   }
 
   return key + " " + desc;

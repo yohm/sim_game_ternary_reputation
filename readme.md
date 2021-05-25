@@ -124,7 +124,7 @@ A sample of the JSON file and the job script are in `job/` directory.
 
 ### calc_histo.out
 
-Classify the ESS pairs according to the criteria mentioned in the paper. It should work with the ``core set'' but probably not with the others since it raises an exception when an unknown pattern is found.
+Classify the ESS pairs according to the criteria mentioned in the paper. It should work with the ``core set'' but probably not with the others containing unknown types.
 Give `ESS_ids` as its argument. The histogram of the output is printed to stdout, while the strategies in each class are printed in files `DP_...` in the same format as `ESS_ids`.
 It is parallelized using OpenMP.
 
