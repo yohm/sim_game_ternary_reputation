@@ -55,7 +55,7 @@ class PopulationFlow {
     ss << std::fixed << std::setprecision(3);
     // calc major flow
     double threshold = 0.004;
-    ss << "- Major Population Flow: (threshold=" << threshold << ")" << std::endl;
+    ss << "- Major Population Flow: (threshold=" << threshold << ", implementation error: *, assignment error: +)" << std::endl;
     std::array<std::pair<double, size_t>, 54> flow_idx;
     for (size_t i = 0; i < 54; i++) {
       flow_idx[i] = std::make_pair(w[i], i);
