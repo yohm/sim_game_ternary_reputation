@@ -1,4 +1,6 @@
 #include <iostream>
+#include <string>
+#include <regex>
 #include <cassert>
 #include <icecream.hpp>
 #include "Game.hpp"
@@ -9,42 +11,54 @@ bool Close(double d1, double d2, double tolerance = 1.0e-2) {
   return std::abs(d1-d2) < tolerance;
 }
 
+void PrintGame(Game& g) {
+  g.ResidentEqReputation();
+  std::cout << g.InspectMD();
+  {
+    auto a100 = g.CalcHStarFromInitialPoint({1.0, 0.0, 0.0});
+    auto a010 = g.CalcHStarFromInitialPoint({0.0, 1.0, 0.0});
+    auto a001 = g.CalcHStarFromInitialPoint({0.0, 0.0, 1.0});
+    IC(a100, a010, a001, g.ResidentEqReputation());
+  }
+  {
+    auto min_pair = g.MinPayoffDiff(2.0, 1.0);
+    std::cout << "Min payoff difference b/c = 2: " << min_pair.first << "\n";
+    std::cout << min_pair.second.Inspect();
+  }
+  IC(g.MutantPayoff(ActionRule(0), 2.0, 1.0),
+     g.MutantPayoff(ActionRule(511), 2.0, 1.0),
+     g.MutantPayoff(ActionRule(g.strategy.ar), 2.0, 1.0));
+  PopulationFlow pf(g);
+  std::cout << pf.InspectMD();
+}
+
 int main(int argc, char *argv[]) {
   if (argc > 1) {
+    std::regex re1(R"(\d+)");
+    std::regex re2(R"(([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]))");
+    std::cmatch m;
     for (size_t i = 1; i < argc; i++) {
-      uint64_t id = std::stoull(argv[i]);
-      Game g(0.02, 0.02, id);
-      g.ResidentEqReputation();
-      std::cout << g.InspectMD();
-      /*
-      {
-        const int N = 5;
-        const double N_inv = 1.0 / (double) N;
-        for (int i = 0; i <= N; i++) {
-          for (int j = 0; j <= (N - i); j++) {
-            int k = N - i - j;
-            auto a = g.CalcHStarFromInitialPoint({i * N_inv, j * N_inv, k * N_inv});
-            IC(a, i, j, k);
-          }
+      if (std::regex_match(argv[i], re1)) {
+        uint64_t id = std::stoull(argv[i]);
+        Game g(0.02, 0.02, id);
+        PrintGame(g);
+      }
+      if (std::regex_match(argv[i], m, re2)) {
+        ActionRule ar(0);
+        ReputationDynamics rd(0);
+        for (int i = 0; i < 9; i++) {
+          Reputation donor = static_cast<Reputation>(i/3);
+          Reputation recip = static_cast<Reputation>(i%3);
+          Action act = C2A(m[i+1].str()[0]);
+          Reputation rep_correct = C2R(m[i+1].str()[1]);  // reputation for the correct action
+          Reputation rep_wrong = C2R(m[i+1].str()[2]);    // reputation for the wrong action
+          ar.SetAction(donor, recip, act);
+          rd.SetRep(donor, recip, act, rep_correct);
+          rd.SetRep(donor, recip, FlipAction(act), rep_wrong);
         }
+        Game g(0.02, 0.02, rd, ar);
+        PrintGame(g);
       }
-       */
-      {
-        auto a100 = g.CalcHStarFromInitialPoint({1.0, 0.0, 0.0});
-        auto a010 = g.CalcHStarFromInitialPoint({0.0, 1.0, 0.0});
-        auto a001 = g.CalcHStarFromInitialPoint({0.0, 0.0, 1.0});
-        IC(a100, a010, a001, g.ResidentEqReputation());
-      }
-      {
-        auto min_pair = g.MinPayoffDiff(2.0, 1.0);
-        std::cout << "Min payoff difference b/c = 2: " << min_pair.first << "\n";
-        std::cout << min_pair.second.Inspect();
-      }
-      IC( g.MutantPayoff(ActionRule(0), 2.0, 1.0),
-          g.MutantPayoff(ActionRule(511), 2.0, 1.0),
-          g.MutantPayoff(ActionRule(g.strategy.ar), 2.0, 1.0) );
-      PopulationFlow pf(g);
-      std::cout << pf.InspectMD();
     }
     return 0;
   }
