@@ -18,18 +18,14 @@ target_link_libraries(main_search_ESS.out PRIVATE OpenMP::OpenMP_CXX ${MPI_LIBRA
 add_executable(calc_histo.out calc_histo.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
 target_link_libraries(calc_histo.out PRIVATE OpenMP::OpenMP_CXX)
 
-add_executable(calc_flow.out calc_flow.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
-target_link_libraries(calc_flow.out PRIVATE OpenMP::OpenMP_CXX)
-
 add_executable(sort_ESSs.out sort_ESSs.cpp)
 add_executable(diff_ESSs.out diff_ESSs.cpp)
 
 add_executable(print_normalized_RD.out print_normalized_RD.cpp Strategy.hpp)
 
-add_executable(test_ReputationDynamics.out test_Strategy.cpp Strategy.hpp)
+add_executable(test_Strategy.out test_Strategy.cpp Strategy.hpp)
 
 add_executable(test_Game.out test_Game.cpp Strategy.hpp Game.hpp)
 
-# private reputation
-add_executable(main_private_rep_coop_prob.out main_private_rep_coop_prob.cpp ${SOURCE_FILES})
-target_link_libraries(main_private_rep_coop_prob.out ${MPI_LIBRARIES})
+add_executable(check_initial_condition.out check_initial_condition.cpp Game.hpp Strategy.hpp)
+target_link_libraries(check_initial_condition.out PRIVATE OpenMP::OpenMP_CXX)
