@@ -244,7 +244,7 @@ std::string ClassifyType(const Game& g) {
 
   // classify by GG:cG:B or GG:cN:B
   if (
-    H[1] < 0.1  // G is dominant
+    H[1] < 0.01  // G is dominant
     )
   {
     key += "C1.";
@@ -451,8 +451,11 @@ int main(int argc, char* argv[]) {
 
   #pragma omp parallel for shared(inputs,outs) default(none)
   for (size_t i = 0; i < inputs.size(); i++) {
-    const Input& input = inputs[i];
-    Game g(0.02, 0.02, input.gid, input.c_prob, input.h);
+    Input input = inputs[i];
+    Game g(0.00001, 0.00001, input.gid);
+    input.h = g.ResidentEqReputation();
+    input.c_prob = g.ResidentCoopProb();
+    // Game g(0.02, 0.02, input.gid, input.c_prob, input.h);
     std::string type = ClassifyType(g);
     int th = omp_get_thread_num();
     outs[th].map_type_inputs[type].emplace_back(input);
@@ -476,7 +479,7 @@ int main(int argc, char* argv[]) {
 
     const int OUT_SIZE_TH = -1;
     std::string key = ExtractKeyFromType(kv.first);
-    std::ofstream fout(std::string("DP_") + key);
+    std::ofstream fout(std::string("ESS_") + key);
     int count = 0;
     for (const Input& input: kv.second) {
       fout << input.gid << ' ' << input.c_prob << ' ' << input.h.at(0) << ' ' << input.h.at(1) << ' ' << input.h.at(2) << std::endl;
