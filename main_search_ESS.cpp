@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
     return result;
   };
 
-  caravan::Start(on_init, on_result_receive, do_task, MPI_COMM_WORLD, 384, 2);
+  caravan::Start(on_init, on_result_receive, do_task, MPI_COMM_WORLD);
 
   MPI_Finalize();
 
