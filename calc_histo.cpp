@@ -130,8 +130,8 @@ std::string ClassifyType(const Game& g) {
 
   std::string desc = "", key = "";
 
-  auto classify_by_apology_to_G = [&g,&desc,&key]() {
-    // how B,N change reputation when meeting G
+  auto classifyByRecoveryC1 = [&g,&desc,&key]() {
+    // how B recover G in C1 norms
     if (
       Match(g, {"BG:cG"}).empty()
       )
@@ -140,25 +140,74 @@ std::string ClassifyType(const Game& g) {
       desc += ", BG:cG (R1: B->G)";
     }
     else if (
-      Match(g, {"BG:*N"}).empty()
+      Match(g, {"BG:cN", "NG:cG"}).empty()
       )
     {
-      key += "R2.";
-      desc += ", BG:*N (R2: B->N)";
+      key += "R21.";
+      desc += ", BG:cN NG:cG (R21: B->N->G,cc)";
     }
     else if (
-      Match(g, {"BG:*B"}).empty()
+      Match(g, {"BG:cN", "NG:dG"}).empty()
       )
     {
-      key += "R3.";
-      desc += ", BG:*B (R3: B)";
+      key += "R22.";
+      desc += ", BG:cN NG:dG (R22: B->N->G,cd)";
+    }
+    else if (
+      Match(g, {"BG:dN", "NG:cG"}).empty()
+      )
+    {
+      key += "R23.";
+      desc += ", BG:dN NG:cG (R23: B->N->G,dc)";
+    }
+    else if (
+      Match(g, {"BG:*N", "NG:cN", "NN:*G"}).empty()
+      )
+    {
+      key += "R24.";
+      desc += ", BG:*N NG:cN NN:*G (R24: B->N,NN->G,dc)";
+    }
+    else if (
+      Match(g, {"BG:*B", "BB:*G"}).empty()
+      )
+    {
+      key += "R31.";
+      desc += ", BG:*B BB:*G (R31: BB->G)";
+    }
+    else if (
+      Match(g, {"BG:*B", "BB:*N", "NG:*G"}).empty()
+      )
+    {
+      key += "R32.";
+      desc += ", BG:*B BB:*N NG:*G (R32: BB->N,N->G)";
+    }
+    else if (
+      Match(g, {"BG:*B", "BN:*G"}).empty()
+      )
+    {
+      key += "R33.";
+      desc += ", BG:*B BN:*G (R33: BN->G)";
+    }
+    else if (
+      Match(g, {"BG:*B", "BN:*N", "NG:*G"}).empty()
+      )
+    {
+      key += "R34.";
+      desc += ", BG:*B BN:*N NG:*G (R34: BN->N,N->G)";
+    }
+    else if (
+      Match(g, {"BG:*B", "BN:*N", "NG:*N", "NN:*G"}).empty()
+      )
+    {
+      key += "R35.";
+      desc += ", BG:*B BN:*N NG:*N NN:*G (R35: BN->N,NN->G)";
     }
     else {
       key += "99.";
     }
   };
 
-  auto classify_by_punishment_G = [&g,&desc,&key]() {
+  auto classifyByPunishmentG = [&g,&desc,&key]() {
     if (
       Match(g, {"GB:dG"}).empty()
       )
@@ -174,11 +223,11 @@ std::string ClassifyType(const Game& g) {
       desc += ", GB:dN (P2: G punisher becomes N)";
     }
     else if (
-      Match(g, {"GB:dB"}).empty()
+      Match(g, {"GB:dB:N"}).empty()
       )
     {
       key += "P3.";
-      desc += ", GB:dB (P3: G punisher becomes B)";
+      desc += ", GB:dB:N (P3: G punisher becomes B, gets N without punishment)";
     }
     else {
       key += "99.";
@@ -242,16 +291,20 @@ std::string ClassifyType(const Game& g) {
 
   const std::array<double,3> H = g.ResidentEqReputation();
 
+  if (g.ResidentCoopProb() < 0.99) {
+    return "C0. partial cooperation";
+  }
+
   // classify by GG:cG:B or GG:cN:B
   if (
-    H[1] < 0.01  // G is dominant
+    H[2] >= 0.99  // G is dominant
     )
   {
     key += "C1.";
-    desc += "GG:cG:B h_N<0.1 (C1: G dominant)";
+    desc += "GG:cG:B h_G>0.99 (C1: G dominant)";
 
-    classify_by_punishment_G();
-    classify_by_apology_to_G();
+    classifyByPunishmentG();
+    classifyByRecoveryC1();
   }
   else if (
     Match(g, {"GG:c[NG]:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:c[GN]:B"}).empty()  // [NG][NG] forms cooperation
@@ -265,30 +318,30 @@ std::string ClassifyType(const Game& g) {
   else if (
     Match(g, {"GG:cG:B", "GN:c[GN]:B", "NG:c[GN]:B", "NN:d[GN]"}).empty()
     ) {
-    key += "C3.";
-    desc += "GG:cG:B [GN,NG]:c[GN]:B NN:dG (C3: NN defects and gets GN)";
+    key += "C31.";
+    desc += "GG:cG:B [GN,NG]:c[GN]:B NN:dG (C31: NN defects and gets GN)";
 
-    classify_by_punishment_G();
-    classify_by_apology_to_G();
-  }
-  else if ( // [NG][NG] forms cooperation but N has a higher value
-    Match(g, {"GG:cG:B", "GN:cG:B", "NG:cN:G", "NN:cN:[GB]"}).empty() ||
-    Match(g, {"GG:cG:B", "GN:cG:B", "NG:cN:[GB]", "NN:cN:G"}).empty()
-    ) {
-    key += "C5.";
-    desc += "[GN][GN]:c[GN]:[BG] (C5: GN cooperation, defecting N gets G)";
-
-    classify_by_punishment_GN();
-    classify_by_recovery_path_GN();
+    classifyByPunishmentG();
+    classifyByRecoveryC1();
   }
   else if (
     Match(g, {"GG:cG:B", "GN:cN:B", "NG:cG:B", "NN:dB"}).empty()  // [NG][NG] but NN forms cooperation
     ) {
-    key += "C6.";
-    desc += "[GN][GN]:c[GN]:B NN:dB (C6: NN defects and gets B)";
+    key += "C32.";
+    desc += "[GN][GN]:c[GN]:B NN:dB (C32: NN defects and gets B)";
 
-    classify_by_punishment_G();
-    classify_by_apology_to_G();
+    classifyByPunishmentG();
+    classifyByRecoveryC1();
+  }
+  else if ( // N forms cooperation, and defecting N gets G N->G->B
+    Match(g, {"GG:cG:B", "GN:cG:B", "NG:cN:G", "NN:cN:[GB]"}).empty() ||
+    Match(g, {"GG:cG:B", "GN:cG:B", "NG:cN:[GB]", "NN:cN:G"}).empty()
+    ) {
+    key += "C4.";
+    desc += "N[GN]:cN:[BG], G[GN]:cG:B (C5: GN cooperation, defecting N gets G)";
+
+    classify_by_punishment_GN();
+    classify_by_recovery_path_GN();
   }
   else {
     key += "C99.";
@@ -311,7 +364,7 @@ struct Output {
     std::map<std::string, histo3_t> h_histos;
     for (auto kv: map_type_inputs) {
       std::string type = kv.first;
-      const double bin = 0.05;
+      const double bin = 0.01;
       h_histos.insert( std::make_pair(type, histo3_t({bin, bin, bin})));
       for (const Input& in : kv.second) {
         h_histos.at(type).at(0).Add(in.h.at(0));
