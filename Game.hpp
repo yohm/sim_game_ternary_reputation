@@ -38,7 +38,9 @@ class Game {
       ss << "(" << X << "->" << Y << "): " << std::get<0>(p) << std::get<1>(p) << ':' << std::get<2>(p);
       ss << ((i % 3 == 2) ? "\n" : "\t");
     }
-    ss << "(c_prob,h0,h1,h2): " << ResidentCoopProb() << ' ' << h[0] << ' ' << h[1] << ' ' << h[2] << std::endl;
+    if (resident_h_star_ready) {
+      ss << "(c_prob,h0,h1,h2): " << ResidentCoopProb() << ' ' << h[0] << ' ' << h[1] << ' ' << h[2] << std::endl;
+    }
     return ss.str();
   }
   std::string Inspect() {
@@ -50,6 +52,7 @@ class Game {
     std::stringstream ss;
     ss << "- GameID: " << ID() << "\n"
        << "  - RD_id, AR_id: " << strategy.rd.ID() << ", " << strategy.ar.ID() << "\n"
+       << "  - mu_a, mu_e: " << mu_a << ' ' << mu_e << "\n"
        << "- Prescriptions:\n\n"
        << "  | | | |\n"
        << "  |-|-|-|\n";
@@ -60,12 +63,19 @@ class Game {
       ss << "  | (" << X << "->" << Y << ") " << std::get<0>(p) << std::get<1>(p) << ':' << std::get<2>(p) << " ";
       ss << ((i % 3 == 2) ? " |\n" : "");
     }
-    ss << "\n" << std::fixed << std::setprecision(2);
+    ss << "\n" << std::fixed << std::setprecision(3);
     ss << "- Cooperation Probability: " << ResidentCoopProb() << "\n"
        << "- Population:" << "\n"
        << "  - h_B: " << resident_h_star[0] << "\n"
        << "  - h_N: " << resident_h_star[1] << "\n"
        << "  - h_G: " << resident_h_star[2] << "\n";
+    Game g2(1.0e-5, 1.0e-5, ID());
+    ss << "- Cooperation Probability (mu=1e-5): " << g2.ResidentCoopProb() << "\n"
+       << "- Population (mu=1e-5):" << "\n"
+       << "  - h_B: " << g2.resident_h_star[0] << "\n"
+       << "  - h_N: " << g2.resident_h_star[1] << "\n"
+       << "  - h_G: " << g2.resident_h_star[2] << "\n";
+
     auto cont_payoff = ContinuationPayoff(0.5, 2.0, 1.0, mu_e);
     ss << "- Continuation payoff (w=0.5, b/c=2.0):" << "\n"
        << "  - v_B: " << cont_payoff[0] << "\n"
@@ -253,7 +263,7 @@ class Game {
   }
   v3d_t SolveByRungeKutta(std::function<v3d_t (v3d_t)>& func, const v3d_t& init = {1.0/3.0,1.0/3.0,1.0/3.0}) const {
     v3d_t ht = init;
-    const size_t N_ITER = 1'000'000;
+    const size_t N_ITER = 10'000'000;
     double dt = 0.01;
     const double conv_tolerance = 1.0e-6 * dt;
     for (size_t t = 0; t < N_ITER; t++) {
@@ -299,6 +309,10 @@ class Game {
           std::abs(delta[1]) < conv_tolerance &&
           std::abs(delta[2]) < conv_tolerance) {
         break;
+      }
+      if (t == N_ITER-1) {
+        IC(Inspect(), delta, ht);
+        throw std::runtime_error("does not converge");
       }
     }
     return ht;
