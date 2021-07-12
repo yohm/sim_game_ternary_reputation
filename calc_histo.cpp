@@ -326,6 +326,13 @@ struct Output {
       map_type_inputs[kv.first].insert(map_type_inputs[kv.first].begin(), kv.second.begin(), kv.second.end());
     }
   }
+  void SortByID() {
+    for (auto kv: map_type_inputs) {
+      std::sort(kv.second.begin(), kv.second.end(), [](const Input &lhs, const Input &rhs) {
+        return (lhs.gid < rhs.gid);
+      });
+    }
+  }
 };
 
 void PrintHistogramPrescriptions(const std::vector<Input> inputs) {
@@ -449,10 +456,11 @@ int main(int argc, char* argv[]) {
 
   std::vector<Output> outs(num_threads);
 
-  #pragma omp parallel for shared(inputs,outs) default(none)
+  #pragma omp parallel for shared(inputs,outs,std::cerr) default(none) schedule(dynamic, 1000)
   for (size_t i = 0; i < inputs.size(); i++) {
+    if (i % (inputs.size()/20) == 0) { std::cerr << "progress: " << (i*100)/inputs.size() << " %" << std::endl; }
     Input input = inputs[i];
-    Game g(0.00001, 0.00001, input.gid);
+    Game g(1.0e-5, 1.0e-5, input.gid);
     input.h = g.ResidentEqReputation();
     input.c_prob = g.ResidentCoopProb();
     // Game g(0.02, 0.02, input.gid, input.c_prob, input.h);
@@ -465,6 +473,7 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < num_threads; i++) {
     out.Merge( outs[i] );
   }
+  out.SortByID();
 
   for (auto kv: out.map_type_inputs) {
     std::cout << "type: " << kv.first << ", " << kv.second.size() << std::endl;
