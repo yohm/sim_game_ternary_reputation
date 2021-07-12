@@ -1,7 +1,7 @@
 #!/bin/bash
 #PJM --rsc-list "node=1000"
 #PJM --rsc-list "rscunit=rscunit_ft01"
-#PJM --rsc-list "rscgrp=eap-large"
+#PJM --rsc-list "rscgrp=large"
 #PJM --rsc-list "elapse=05:00:00"
 #PJM --mpi "max-proc-per-node=4"
 #PJM -s
