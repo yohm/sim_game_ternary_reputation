@@ -20,14 +20,11 @@ void PrintGame(Game& g) {
     auto a001 = g.CalcHStarFromInitialPoint({0.0, 0.0, 1.0});
     IC(a100, a010, a001, g.ResidentEqReputation());
   }
-  {
-    auto min_pair = g.MinPayoffDiff(2.0, 1.0);
-    std::cout << "Min payoff difference b/c = 2: " << min_pair.first << "\n";
-    std::cout << min_pair.second.Inspect();
-  }
+  /*
   IC(g.MutantPayoff(ActionRule(0), 2.0, 1.0),
      g.MutantPayoff(ActionRule(511), 2.0, 1.0),
      g.MutantPayoff(ActionRule(g.strategy.ar), 2.0, 1.0));
+     */
   PopulationFlow pf(g);
   std::cout << pf.InspectMD();
 }
@@ -96,7 +93,7 @@ int main(int argc, char *argv[]) {
     assert( Close(mut_h[2], 0.573) );
 
     assert( g.IsESS(2.0, 1.0) == false );
-    assert( Close(g.MinPayoffDiff(2.0, 1.0).first, -0.199) );
+    assert( Close(g.FindNegativePayoffDiff(2.0, 1.0).first, -0.199) );
 
     uint64_t new_rd_id = g.strategy.rd.Permute({1,0,2}).ID();
     uint64_t new_ar_id = g.strategy.ar.Permute({1,0,2}).ID();
@@ -195,7 +192,7 @@ int main(int argc, char *argv[]) {
     assert(g2.ResidentCoopProb() > 0.95);
 
     assert(g2.IsESS(1.2, 1.0));
-    std::pair<double,ActionRule> min_pair = g2.MinPayoffDiff(1.2, 1.0);
+    std::pair<double,ActionRule> min_pair = g2.FindNegativePayoffDiff(1.2, 1.0);
     assert(Close(min_pair.first, 0.0001) );
     assert(Close(min_pair.second.ID(), 308) );
 
