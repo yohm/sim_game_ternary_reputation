@@ -216,11 +216,25 @@ std::string ClassifyType(const Game& g) {
       desc += ", GB:dG (P1: G punisher is justified)";
     }
     else if (
-      Match(g, {"GB:dN"}).empty()
+      Match(g, {"GB:dN", "GN:dG"}).empty()
       )
     {
-      key += "P2.";
-      desc += ", GB:dN (P2: G punisher becomes N)";
+      key += "P21.";
+      desc += ", GB:dN GN:dG (P21: G punisher becomes N, N is punished by G)";
+    }
+    else if (
+      Match(g, {"GB:dN", "GN:cG"}).empty()
+      )
+    {
+      key += "P22.";
+      desc += ", GB:dN GN:cG (P22: G punisher becomes N, N is cooperated by G)";
+    }
+    else if (
+      Match(g, {"GB:dN", "GN:cN", "NG:cG", "NN:*G"}).empty()
+      )
+    {
+      key += "P23.";
+      desc += ", GB:dN GN:cN NG:cG NN:*G (P23: G punisher becomes N, GN:cN, NG:cG & NN:*G)";
     }
     else if (
       Match(g, {"GB:dB:N"}).empty()
@@ -513,10 +527,10 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < inputs.size(); i++) {
     if (i % (inputs.size()/20) == 0) { std::cerr << "progress: " << (i*100)/inputs.size() << " %" << std::endl; }
     Input input = inputs[i];
-    Game g(1.0e-5, 1.0e-5, input.gid);
-    input.h = g.ResidentEqReputation();
-    input.c_prob = g.ResidentCoopProb();
-    // Game g(0.02, 0.02, input.gid, input.c_prob, input.h);
+    // Game g(1.0e-5, 1.0e-5, input.gid);
+    // input.h = g.ResidentEqReputation();
+    // input.c_prob = g.ResidentCoopProb();
+    Game g(0.02, 0.02, input.gid, input.c_prob, input.h);
     std::string type = ClassifyType(g);
     int th = omp_get_thread_num();
     outs[th].map_type_inputs[type].emplace_back(input);
