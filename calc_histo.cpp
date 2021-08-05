@@ -330,22 +330,22 @@ std::string ClassifyType(const Game& g) {
     classifyByRecoveryC1();
   }
   else if (
-    std::abs(hN_exponent - 0.0) < tol && std::abs(hB_exponent - 1.0) < tol
-    ) {
-    key += "C2.";
-    desc += "h_N=O(1),h_G=O(mu) (C2: GN dominant)";
-
-    classify_by_punishment_GN();
-    classify_by_recovery_path_GN();
-  }
-  else if (
     std::abs(hN_exponent - 0.5) < tol && std::abs(hB_exponent - 1.0) < tol
     ) {
-    key += "C3.";
-    desc += "h_N=O(mu^1/2),h_B=O(mu) (C3: N~sqrt(mu))";
+    key += "C2.";
+    desc += "h_N=O(mu^1/2),h_B=O(mu) (C2: N~sqrt(mu))";
 
     classifyByPunishmentG();
     classifyByRecoveryC1();
+  }
+  else if (
+    std::abs(hN_exponent - 0.0) < tol && std::abs(hB_exponent - 1.0) < tol
+    ) {
+    key += "C3.";
+    desc += "h_N=O(1),h_G=O(mu) (C3: GN dominant)";
+
+    classify_by_punishment_GN();
+    classify_by_recovery_path_GN();
   }
   else if (
     std::abs(hN_exponent - 0.33) < tol && std::abs(hB_exponent - 0.67) < tol
