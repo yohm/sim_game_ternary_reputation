@@ -116,21 +116,32 @@ std::string Match(const Game& g, const std::vector<std::string>& patterns) {
 }
 
 
-std::string ClassifyType(const Game& g) {
-  const ReputationDynamics rd = g.strategy.rd;
-  const ActionRule ar = g.strategy.ar;
-
+std::string ClassifyType(uint64_t game_id) {
   const Reputation B = Reputation::B, N = Reputation::N, G = Reputation::G;
   const Action D = Action::D, C = Action::C;
 
-  // GGd => B
-  if (rd.RepAt(G, G, D) != B) {
-    throw std::runtime_error("must not happen");
-  }
-
   std::string desc = "", key = "";
 
-  auto classifyByRecoveryC1 = [&g,&desc,&key]() {
+  Game g(1.0e-3, 1.0e-3, game_id);
+  Game::v3d_t H_3 = g.ResidentEqReputation();
+  Game g_4(1.0e-4, 1.0e-4, game_id);
+  Game::v3d_t H_4 = g_4.ResidentEqReputation();
+
+  const double hN_exponent = (std::log10(H_3[1]) - std::log10(H_4[1])) / 1.0;
+  const double hB_exponent = (std::log10(H_3[0]) - std::log10(H_4[0])) / 1.0;
+  const double defect_level_exponent = (std::log10(1.0 - g.ResidentCoopProb()) - std::log10(1.0 - g_4.ResidentCoopProb())) / 1.0;
+  const double tol = 0.05;
+
+  if (g.ResidentCoopProb() < 0.99) {
+    return "C0. partial cooperation";
+  }
+  if ( std::abs(defect_level_exponent - 1.0) >= tol ) {
+    IC(defect_level_exponent, g.ID());
+    return "C01. unexpected defect_level scaling";
+  }
+
+
+  auto classify_by_recovery_C1 = [&g,&desc,&key]() {
     // how B recover G in C1 norms
     if (
       Match(g, {"BG:cG"}).empty()
@@ -167,47 +178,12 @@ std::string ClassifyType(const Game& g) {
       key += "R24.";
       desc += ", BG:*N NG:cN NN:*G (R24: B->N,NN->G,dc)";
     }
-    else if (
-      Match(g, {"BG:*B", "BB:*G"}).empty()
-      )
-    {
-      key += "R31.";
-      desc += ", BG:*B BB:*G (R31: BB->G)";
-    }
-    else if (
-      Match(g, {"BG:*B", "BB:*N", "NG:*G"}).empty()
-      )
-    {
-      key += "R32.";
-      desc += ", BG:*B BB:*N NG:*G (R32: BB->N,N->G)";
-    }
-    else if (
-      Match(g, {"BG:*B", "BN:*G"}).empty()
-      )
-    {
-      key += "R33.";
-      desc += ", BG:*B BN:*G (R33: BN->G)";
-    }
-    else if (
-      Match(g, {"BG:*B", "BN:*N", "NG:*G"}).empty()
-      )
-    {
-      key += "R34.";
-      desc += ", BG:*B BN:*N NG:*G (R34: BN->N,N->G)";
-    }
-    else if (
-      Match(g, {"BG:*B", "BN:*N", "NG:*N", "NN:*G"}).empty()
-      )
-    {
-      key += "R35.";
-      desc += ", BG:*B BN:*N NG:*N NN:*G (R35: BN->N,NN->G)";
-    }
     else {
       key += "99.";
     }
   };
 
-  auto classifyByPunishmentG = [&g,&desc,&key]() {
+  auto classify_by_punishment_C1 = [&g,&desc,&key]() {
     if (
       Match(g, {"GB:dG"}).empty()
       )
@@ -236,19 +212,12 @@ std::string ClassifyType(const Game& g) {
       key += "P23.";
       desc += ", GB:dN GN:cN NG:cG NN:*G (P23: G punisher becomes N, GN:cN, NG:cG & NN:*G)";
     }
-    else if (
-      Match(g, {"GB:dB:N"}).empty()
-      )
-    {
-      key += "P3.";
-      desc += ", GB:dB:N (P3: G punisher becomes B, gets N without punishment)";
-    }
     else {
       key += "99.";
     }
   };
 
-  auto classify_by_recovery_path_GN = [&g,&desc,&key]() {
+  auto classify_by_recovery_path_C3 = [&g,&desc,&key]() {
     // recovery path
     if (
       Match(g, {"BG:c[GN]:B", "BN:c[GN]:B"}).empty()
@@ -276,7 +245,7 @@ std::string ClassifyType(const Game& g) {
     }
   };
 
-  auto classify_by_punishment_GN = [&g,&desc,&key]() {  // for type2, classify of punisher
+  auto classify_by_punishment_C3 = [&g,&desc,&key]() {  // for type2, classify of punisher
     if (
       Match(g, {"GB:d[GN]", "NB:d[GN]"}).empty()
       )
@@ -303,31 +272,13 @@ std::string ClassifyType(const Game& g) {
     }
   };
 
-  const std::array<double,3> H = g.ResidentEqReputation();
-
-  if (g.ResidentCoopProb() < 0.99) {
-    return "C0. partial cooperation";
-  }
-
-  Game g_2(1.0e-2, 1.0e-2, g.ID());
-  Game::v3d_t H_2 = g_2.ResidentEqReputation();
-  Game g_3(1.0e-3, 1.0e-3, g.ID());
-  Game::v3d_t H_3 = g_3.ResidentEqReputation();
-  Game g_4(1.0e-4, 1.0e-4, g.ID());
-  Game::v3d_t H_4 = g_4.ResidentEqReputation();
-
-  // [IMPLEMENT ME] estimate exponent
-  const double hN_exponent = (std::log10(H_3[1]) - std::log10(H_4[1])) / 1.0;
-  const double hB_exponent = (std::log10(H_3[0]) - std::log10(H_4[0])) / 1.0;
-  const double tol = 0.05;
-
   // C1
   if ( std::abs(hN_exponent - 1.0) < tol && std::abs(hB_exponent - 1.0) < tol ) {
     key += "C1.";
     desc += "h_N=O(mu),h_G=O(mu) (C1: G dominant)";
 
-    classifyByPunishmentG();
-    classifyByRecoveryC1();
+    classify_by_punishment_C1();
+    classify_by_recovery_C1();
   }
   else if (
     std::abs(hN_exponent - 0.5) < tol && std::abs(hB_exponent - 1.0) < tol
@@ -335,8 +286,8 @@ std::string ClassifyType(const Game& g) {
     key += "C2.";
     desc += "h_N=O(mu^1/2),h_B=O(mu) (C2: N~sqrt(mu))";
 
-    classifyByPunishmentG();
-    classifyByRecoveryC1();
+    classify_by_punishment_C1();
+    classify_by_recovery_C1();
   }
   else if (
     std::abs(hN_exponent - 0.0) < tol && std::abs(hB_exponent - 1.0) < tol
@@ -344,8 +295,8 @@ std::string ClassifyType(const Game& g) {
     key += "C3.";
     desc += "h_N=O(1),h_G=O(mu) (C3: GN dominant)";
 
-    classify_by_punishment_GN();
-    classify_by_recovery_path_GN();
+    classify_by_punishment_C3();
+    classify_by_recovery_path_C3();
   }
   else if (
     std::abs(hN_exponent - 0.33) < tol && std::abs(hB_exponent - 0.67) < tol
@@ -353,8 +304,8 @@ std::string ClassifyType(const Game& g) {
     key += "C4.";
     desc += "h_N=O(mu^1/3),h_B=O(mu^2/3) (C4: N~mu^1/3, B~mu^2/3)";
 
-    classifyByPunishmentG();
-    classifyByRecoveryC1();
+    classify_by_punishment_C1();
+    classify_by_recovery_C1();
   }
   else {
     IC(hN_exponent, hB_exponent);
@@ -527,11 +478,7 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < inputs.size(); i++) {
     if (inputs.size() > 20 && i % (inputs.size()/20) == 0) { std::cerr << "progress: " << (i*100)/inputs.size() << " %" << std::endl; }
     Input input = inputs[i];
-    // Game g(1.0e-5, 1.0e-5, input.gid);
-    // input.h = g.ResidentEqReputation();
-    // input.c_prob = g.ResidentCoopProb();
-    Game g(1.0e-3, 1.0e-3, input.gid, input.c_prob, input.h);
-    std::string type = ClassifyType(g);
+    std::string type = ClassifyType(input.gid);
     int th = omp_get_thread_num();
     outs[th].map_type_inputs[type].emplace_back(input);
   }
