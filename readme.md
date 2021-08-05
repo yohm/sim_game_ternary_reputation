@@ -122,14 +122,14 @@ The format of `_input.json` is given as follows.
 
 A sample of the JSON file and the job script are in `job/` directory.
 
-### calc_histo.out
+### main_classify_ESS.out
 
 Classify the ESS pairs according to the criteria mentioned in the paper. It should work with the ``core set'' but probably not with the others containing unknown types.
 Give `ESS_ids` as its argument. The histogram of the output is printed to stdout, while the strategies in each class are printed in files `DP_...` in the same format as `ESS_ids`.
 It is parallelized using OpenMP.
 
 ```shell
-./calc_histo.out ESS_ids > out_histo
+./main_classify_ESS.out ESS_ids > out_histo
 ```
 
 You'll get an output like the following.

@@ -15,8 +15,8 @@ include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 add_executable(main_search_ESS.out main_search_ESS.cpp ${SOURCE_FILES})
 target_link_libraries(main_search_ESS.out PRIVATE OpenMP::OpenMP_CXX ${MPI_LIBRARIES})
 
-add_executable(calc_histo.out calc_histo.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
-target_link_libraries(calc_histo.out PRIVATE OpenMP::OpenMP_CXX)
+add_executable(main_classify_ESS.out main_classify_ESS.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
+target_link_libraries(main_classify_ESS.out PRIVATE OpenMP::OpenMP_CXX)
 
 add_executable(sort_ESSs.out sort_ESSs.cpp)
 add_executable(diff_ESSs.out diff_ESSs.cpp)
