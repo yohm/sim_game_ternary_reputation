@@ -7,7 +7,7 @@
 
 using input_t = std::tuple<uint64_t,double,double,double,double>;
 
-void LoadFile(const char* fname, std::vector<input_t>& inputs) {
+void LoadFileAndSort(const char* fname, std::vector<input_t>& inputs) {
   std::ifstream fin(fname);
   if (!fin) {
     std::cerr << "Failed to open file " << fname << std::endl;
@@ -22,6 +22,10 @@ void LoadFile(const char* fname, std::vector<input_t>& inputs) {
       inputs.emplace_back(gid, c_prob, h0, h1, h2);
     }
   }
+
+  std::sort(inputs.begin(), inputs.end(), [](const input_t& lhs, const input_t& rhs) {
+    return (std::get<0>(lhs) < std::get<0>(rhs));
+  });
 }
 
 int main(int argc, char* argv[]) {
@@ -32,15 +36,8 @@ int main(int argc, char* argv[]) {
   }
 
   std::vector<input_t> inputs1, inputs2;
-  LoadFile(argv[1], inputs1);
-  LoadFile(argv[2], inputs2);
-
-  std::sort(inputs1.begin(), inputs1.end(), [](const input_t& lhs, const input_t& rhs) {
-    return (std::get<0>(lhs) < std::get<0>(rhs));
-  });
-  std::sort(inputs2.begin(), inputs2.end(), [](const input_t& lhs, const input_t& rhs) {
-    return (std::get<0>(lhs) < std::get<0>(rhs));
-  });
+  LoadFileAndSort(argv[1], inputs1);
+  LoadFileAndSort(argv[2], inputs2);
 
   std::vector<input_t > left_only, right_only;
   std::set_difference(inputs1.begin(), inputs1.end(), inputs2.begin(), inputs2.end(), std::inserter(left_only, left_only.end()),
