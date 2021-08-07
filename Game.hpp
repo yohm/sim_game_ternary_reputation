@@ -69,9 +69,9 @@ class Game {
        << "  - h_B: " << resident_h_star[0] << "\n"
        << "  - h_N: " << resident_h_star[1] << "\n"
        << "  - h_G: " << resident_h_star[2] << "\n";
-    Game g2(1.0e-5, 1.0e-5, ID());
-    ss << "- Cooperation Probability (mu=1e-5): " << g2.ResidentCoopProb() << "\n"
-       << "- Population (mu=1e-5):" << "\n"
+    Game g2(1.0e-3, 1.0e-3, ID());
+    ss << "- Cooperation Probability (mu=1e-3): " << g2.ResidentCoopProb() << "\n"
+       << "- Population (mu=1e-3):" << "\n"
        << "  - h_B: " << g2.resident_h_star[0] << "\n"
        << "  - h_N: " << g2.resident_h_star[1] << "\n"
        << "  - h_G: " << g2.resident_h_star[2] << "\n";

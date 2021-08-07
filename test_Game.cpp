@@ -20,11 +20,9 @@ void PrintGame(Game& g) {
     auto a001 = g.CalcHStarFromInitialPoint({0.0, 0.0, 1.0});
     IC(a100, a010, a001, g.ResidentEqReputation());
   }
-  /*
-  IC(g.MutantPayoff(ActionRule(0), 2.0, 1.0),
-     g.MutantPayoff(ActionRule(511), 2.0, 1.0),
-     g.MutantPayoff(ActionRule(g.strategy.ar), 2.0, 1.0));
-     */
+  IC(g.IsESS(1.01, 1.0) );
+  IC(g.IsESS(1.05, 1.0) );
+  IC(g.IsESS(1.1, 1.0) );
   PopulationFlow pf(g);
   std::cout << pf.InspectMD();
 }
@@ -37,7 +35,7 @@ int main(int argc, char *argv[]) {
     for (size_t i = 1; i < argc; i++) {
       if (std::regex_match(argv[i], re1)) {
         uint64_t id = std::stoull(argv[i]);
-        Game g(0.02, 0.02, id);
+        Game g(0.001, 0.001, id);
         PrintGame(g);
       }
       if (std::regex_match(argv[i], m, re2)) {
