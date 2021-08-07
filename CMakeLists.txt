@@ -20,6 +20,7 @@ target_link_libraries(main_classify_ESS.out PRIVATE OpenMP::OpenMP_CXX)
 
 add_executable(sort_ESSs.out sort_ESSs.cpp)
 add_executable(diff_ESSs.out diff_ESSs.cpp)
+add_executable(find_common_ESSs.out find_common_ESSs.cpp)
 
 add_executable(print_normalized_RD.out print_normalized_RD.cpp Strategy.hpp)
 
