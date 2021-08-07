@@ -44,9 +44,9 @@ int main(int argc, char* argv[]) {
 
   std::vector<input_t > left_only, right_only;
   std::set_difference(inputs1.begin(), inputs1.end(), inputs2.begin(), inputs2.end(), std::inserter(left_only, left_only.end()),
-                      [](const input_t& lhs, const input_t& rhs) { return (std::get<0>(lhs) < std::get<1>(rhs)); });
+                      [](const input_t& lhs, const input_t& rhs) { return (std::get<0>(lhs) < std::get<0>(rhs)); });
   std::set_difference(inputs2.begin(), inputs2.end(), inputs1.begin(), inputs1.end(), std::inserter(right_only, right_only.end()),
-                      [](const input_t& lhs, const input_t& rhs) { return (std::get<0>(lhs) < std::get<1>(rhs)); });
+                      [](const input_t& lhs, const input_t& rhs) { return (std::get<0>(lhs) < std::get<0>(rhs)); });
 
   for(const auto& in: left_only) {
     std::cout << "< " << std::get<0>(in) << ' ' << std::get<1>(in) << ' ' << std::get<2>(in) << ' ' << std::get<3>(in) << ' ' << std::get<4>(in) << "\n";
