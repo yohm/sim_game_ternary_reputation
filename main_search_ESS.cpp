@@ -5,6 +5,7 @@
 #include <chrono>
 #include <fstream>
 #include <cassert>
+#include <ctime>
 #include "omp.h"
 #include "mpi.h"
 #include "Strategy.hpp"
@@ -106,9 +107,14 @@ std::vector<Output> SearchRepDsOpenMP(const std::vector<uint64_t>& repd_ids, con
   for (size_t i = 0; i <repd_ids.size(); i++) {
     int th = omp_get_thread_num();
     ReputationDynamics rd(repd_ids[i]);
+    auto t1 = std::chrono::system_clock::to_time_t( std::chrono::system_clock::now() );
+    std::cerr << std::ctime(&t1) << ' ' << rd.ID() << " start" << std::endl;
 
     auto ans = find_ESSs(rd,prm);
     outs_thread[th].insert(outs_thread[th].end(), ans.first.begin(), ans.first.end());
+
+    auto t2 = std::chrono::system_clock::to_time_t( std::chrono::system_clock::now() );
+    std::cerr << std::ctime(&t2) << ' ' << rd.ID() << " done" << std::endl;
   }
 
   std::vector<Output> outs;
@@ -196,6 +202,8 @@ int main(int argc, char *argv[]) {
     for (auto o: output) {
       fout << o.at(0).get<uint64_t>() << ' ' << o.at(1).get<double>() << ' ' << o.at(2).get<double>() << ' ' << o.at(3).get<double>() << ' ' << o.at(4).get<double>() << "\n";
     }
+    size_t s = q.Size();
+    if (s % 100 == 0) { std::cerr << "q.Size: " << s << std::endl; }
   };
   std::function<json(const json&)> do_task = [prm](const json& input) {
     std::vector<uint64_t> repd_ids;
