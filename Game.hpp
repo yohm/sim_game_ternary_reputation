@@ -121,13 +121,14 @@ class Game {
 
     return Game(mu_e, mu_a, new_g_id, ResidentCoopProb(), new_h);
   }
-  bool IsESS(double benefit, double cost) {
+  bool IsESS(double benefit, double cost) const {
+    if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
     auto p = FindNegativePayoffDiff(benefit, cost);
     // IC(p.first, p.second.ID());
     return p.first > 0.0;
   }
-  std::pair<double,ActionRule> FindNegativePayoffDiff(double benefit, double cost) { // an index of evolutionary stability
-    CalcHStarResident();
+  std::pair<double,ActionRule> FindNegativePayoffDiff(double benefit, double cost) const { // an index of evolutionary stability
+    if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
     double res_payoff = MutantPayoff(strategy.ar, benefit, cost);
     double min = std::numeric_limits<double>::max();
     ActionRule highest_mut = strategy.ar;
@@ -150,15 +151,15 @@ class Game {
     if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
     return resident_coop_prob;
   }
-  v3d_t HStarMutant(const ActionRule& mutant_action_rule) {
-    CalcHStarResident();
+  v3d_t HStarMutant(const ActionRule& mutant_action_rule) const {
+    if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
     std::function<std::array<double,3>(std::array<double,3>)> func = [this,&mutant_action_rule](std::array<double,3> x) {
       return HdotMutant(x, mutant_action_rule);
     };
     return SolveByRungeKutta(func);
   }
-  double MutantPayoff(const ActionRule& mutant, double benefit, double cost) {
-    CalcHStarResident();
+  double MutantPayoff(const ActionRule& mutant, double benefit, double cost) const {
+    if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
     v3d_t mut_rep = HStarMutant(mutant);
     // cooperation probability of mutant against resident
     double mut_res_coop = CooperationProb(mutant, mut_rep, resident_h_star); // cooperation prob of mutant for resident
