@@ -124,12 +124,12 @@ std::string ClassifyType(uint64_t game_id) {
 
   Game g(1.0e-3, 1.0e-3, game_id);
   Game::v3d_t H_3 = g.ResidentEqReputation();
-  Game g_4(1.0e-4, 1.0e-4, game_id);
-  Game::v3d_t H_4 = g_4.ResidentEqReputation();
+  Game g_5(1.0e-5, 1.0e-5, game_id);
+  Game::v3d_t H_5 = g_5.ResidentEqReputation();
 
-  const double hN_exponent = (std::log10(H_3[1]) - std::log10(H_4[1])) / 1.0;
-  const double hB_exponent = (std::log10(H_3[0]) - std::log10(H_4[0])) / 1.0;
-  const double defect_level_exponent = (std::log10(1.0 - g.ResidentCoopProb()) - std::log10(1.0 - g_4.ResidentCoopProb())) / 1.0;
+  const double hN_exponent = (std::log10(H_3[1]) - std::log10(H_5[1])) / 2.0;
+  const double hB_exponent = (std::log10(H_3[0]) - std::log10(H_5[0])) / 2.0;
+  const double defect_level_exponent = (std::log10(1.0 - g.ResidentCoopProb()) - std::log10(1.0 - g_5.ResidentCoopProb())) / 2.0;
   const double tol = 0.05;
 
   if (g.ResidentCoopProb() < 0.99) {
