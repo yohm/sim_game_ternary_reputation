@@ -165,8 +165,8 @@ class Game {
       }
       else {  // res_coop_prob == mut_res_coop
         if (mut_res_coop <= res_res_coop) {  // cannot be ESS
-          b_lower_all = std::numeric_limits<double>::min();
-          b_upper_all = std::numeric_limits<double>::max();
+          b_lower_all = std::numeric_limits<double>::max();
+          b_upper_all = std::numeric_limits<double>::min();
           break;
         }
       }
