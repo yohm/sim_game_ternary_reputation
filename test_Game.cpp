@@ -20,9 +20,8 @@ void PrintGame(Game& g) {
     auto a001 = g.CalcHStarFromInitialPoint({0.0, 0.0, 1.0});
     IC(a100, a010, a001, g.ResidentEqReputation());
   }
-  IC(g.IsESS(1.01, 1.0) );
-  IC(g.IsESS(1.05, 1.0) );
-  IC(g.IsESS(1.1, 1.0) );
+  auto ess_b_range = g.ESS_Benefit_Range();
+  IC(ess_b_range.first, ess_b_range.second);
   PopulationFlow pf(g);
   std::cout << pf.InspectMD();
 }

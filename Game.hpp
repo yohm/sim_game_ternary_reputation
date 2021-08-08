@@ -141,6 +141,39 @@ class Game {
     }
     return std::make_pair(min, highest_mut);
   }
+  std::pair<double,double> ESS_Benefit_Range() const {
+    if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
+    double res_res_coop = ResidentCoopProb();
+
+    double b_lower_all = std::numeric_limits<double>::min();
+    double b_upper_all = std::numeric_limits<double>::max();
+
+    for (int i = 0; i < 512; i++) {
+      if (i == strategy.ar.ID()) continue;
+      ActionRule mut_ar(i);
+      auto p = MutantCoopProbs(mut_ar);
+      double mut_res_coop = p.first;
+      double res_mut_coop = p.second;
+
+      if (res_res_coop > res_mut_coop) {
+        double b_lower = (res_res_coop - mut_res_coop) / (res_res_coop - res_mut_coop);
+        if (b_lower > b_lower_all) { b_lower_all = b_lower; }
+      }
+      else if (res_res_coop < res_mut_coop) {
+        double b_upper = (res_res_coop - mut_res_coop) / (res_res_coop - res_mut_coop);
+        if (b_upper < b_upper_all) { b_upper_all = b_upper; }  // update the upper bound of b
+      }
+      else {  // res_coop_prob == mut_res_coop
+        if (mut_res_coop <= res_res_coop) {  // cannot be ESS
+          b_lower_all = std::numeric_limits<double>::min();
+          b_upper_all = std::numeric_limits<double>::max();
+          break;
+        }
+      }
+    }
+
+    return std::make_pair(b_lower_all, b_upper_all);
+  }
   v3d_t ResidentEqReputation() { CalcHStarResident(); return resident_h_star; } // equilibrium reputation of resident species
   v3d_t ResidentEqReputation() const {
     if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
@@ -158,12 +191,18 @@ class Game {
     };
     return SolveByRungeKutta(func);
   }
-  double MutantPayoff(const ActionRule& mutant, double benefit, double cost) const {
+  std::pair<double,double> MutantCoopProbs(const ActionRule& mutant) const {
     if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
     v3d_t mut_rep = HStarMutant(mutant);
     // cooperation probability of mutant against resident
     double mut_res_coop = CooperationProb(mutant, mut_rep, resident_h_star); // cooperation prob of mutant for resident
     double res_mut_coop = CooperationProb(strategy.ar, resident_h_star, mut_rep); // cooperation prob of resident for mutant
+    return std::make_pair(mut_res_coop, res_mut_coop);
+  }
+  double MutantPayoff(const ActionRule& mutant, double benefit, double cost) const {
+    auto p = MutantCoopProbs(mutant);
+    double mut_res_coop = p.first;
+    double res_mut_coop = p.second;
     return benefit * res_mut_coop - cost * mut_res_coop;
   }
   std::pair<std::array<Reputation,3>,std::array<Action,3>> TraceReputationAndAction(const Reputation& init, const Reputation& resident_rep) const {
