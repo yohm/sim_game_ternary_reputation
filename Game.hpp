@@ -144,6 +144,7 @@ class Game {
   std::pair<double,double> ESS_Benefit_Range() const {
     if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
     double res_res_coop = ResidentCoopProb();
+    // IC(res_res_coop, MutantCoopProbs(strategy.ar));
 
     double b_lower_all = std::numeric_limits<double>::min();
     double b_upper_all = std::numeric_limits<double>::max();

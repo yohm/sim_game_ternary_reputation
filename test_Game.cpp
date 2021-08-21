@@ -22,6 +22,8 @@ void PrintGame(Game& g) {
   }
   auto ess_b_range = g.ESS_Benefit_Range();
   IC(ess_b_range.first, ess_b_range.second);
+  auto a1 = g.FindNegativePayoffDiff(1.05, 1.0), a2 = g.FindNegativePayoffDiff(1.1, 1.0), a3 = g.FindNegativePayoffDiff(3.0, 1.0);
+  IC(a1.first, a1.second.Inspect(), a2.first, a2.second.Inspect(), a3.first, a3.second.Inspect());
   PopulationFlow pf(g);
   std::cout << pf.InspectMD();
 }
