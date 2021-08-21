@@ -18,6 +18,9 @@ target_link_libraries(main_search_ESS.out PRIVATE OpenMP::OpenMP_CXX ${MPI_LIBRA
 add_executable(main_classify_ESS.out main_classify_ESS.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
 target_link_libraries(main_classify_ESS.out PRIVATE OpenMP::OpenMP_CXX)
 
+add_executable(main_ESS_range.out main_ESS_range.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
+target_link_libraries(main_ESS_range.out PRIVATE OpenMP::OpenMP_CXX)
+
 add_executable(sort_ESSs.out sort_ESSs.cpp)
 add_executable(diff_ESSs.out diff_ESSs.cpp)
 add_executable(find_common_ESSs.out find_common_ESSs.cpp)
