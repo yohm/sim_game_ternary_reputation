@@ -5,7 +5,7 @@
 #include <icecream.hpp>
 
 
-using input_t = std::tuple<uint64_t,double,double,double,double>;
+using input_t = std::tuple<uint64_t,double,double,double,double,double,double>;
 
 void LoadFileAndSort(const char* fname, std::vector<input_t>& inputs) {
   std::ifstream fin(fname);
@@ -16,10 +16,10 @@ void LoadFileAndSort(const char* fname, std::vector<input_t>& inputs) {
 
   while(fin) {
     uint64_t gid;
-    double c_prob,h0,h1,h2;
-    fin >> gid >> c_prob >> h0 >> h1 >> h2;
+    double c_prob,h0,h1,h2,b_lower,b_upper;
+    fin >> gid >> c_prob >> h0 >> h1 >> h2 >> b_lower >> b_upper;
     if (fin) {
-      inputs.emplace_back(gid, c_prob, h0, h1, h2);
+      inputs.emplace_back(gid, c_prob, h0, h1, h2, b_lower, b_upper);
     }
   }
 
@@ -46,10 +46,12 @@ int main(int argc, char* argv[]) {
                       [](const input_t& lhs, const input_t& rhs) { return (std::get<0>(lhs) < std::get<0>(rhs)); });
 
   for(const auto& in: left_only) {
-    std::cout << "< " << std::get<0>(in) << ' ' << std::get<1>(in) << ' ' << std::get<2>(in) << ' ' << std::get<3>(in) << ' ' << std::get<4>(in) << "\n";
+    std::cout << "< " << std::get<0>(in) << ' ' << std::get<1>(in) << ' ' << std::get<2>(in) << ' ' << std::get<3>(in)
+              << ' ' << std::get<4>(in) << ' ' << std::get<5>(in) << ' ' << std::get<6>(in) << "\n";
   }
   for(const auto& in: right_only) {
-    std::cout << "> " << std::get<0>(in) << ' ' << std::get<1>(in) << ' ' << std::get<2>(in) << ' ' << std::get<3>(in) << ' ' << std::get<4>(in) << "\n";
+    std::cout << "> " << std::get<0>(in) << ' ' << std::get<1>(in) << ' ' << std::get<2>(in) << ' ' << std::get<3>(in)
+              << ' ' << std::get<4>(in) << ' ' << std::get<5>(in) << ' ' << std::get<6>(in) << "\n";
   }
   std::cerr << "size: < " << left_only.size() << ", > " << right_only.size() << "\n";
 

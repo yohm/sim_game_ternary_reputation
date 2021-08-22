@@ -17,16 +17,16 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("failed to open file");
   }
 
-  using input_t = std::tuple<uint64_t,double,double,double,double>;
+  using input_t = std::tuple<uint64_t,double,double,double,double,double,double>;
 
   std::vector<input_t> inputs;
 
   while(fin) {
     uint64_t gid;
-    double c_prob,h0,h1,h2;
-    fin >> gid >> c_prob >> h0 >> h1 >> h2;
+    double c_prob,h0,h1,h2,b_lower,b_uppper;
+    fin >> gid >> c_prob >> h0 >> h1 >> h2 >> b_lower >> b_uppper;
     if (fin) {
-      inputs.emplace_back(gid, c_prob, h0, h1, h2);
+      inputs.emplace_back(gid, c_prob, h0, h1, h2, b_lower, b_uppper);
     }
   }
 
@@ -35,7 +35,8 @@ int main(int argc, char* argv[]) {
   });
 
   for(const auto& in: inputs) {
-    std::cout << std::get<0>(in) << ' ' << std::get<1>(in) << ' ' << std::get<2>(in) << ' ' << std::get<3>(in) << ' ' << std::get<4>(in) << "\n";
+    std::cout << std::get<0>(in) << ' ' << std::get<1>(in) << ' ' << std::get<2>(in) << ' ' << std::get<3>(in) << ' '
+              << std::get<4>(in) << ' ' << std::get<5>(in) << ' ' << std::get<6>(in) << "\n";
   }
 
   return 0;

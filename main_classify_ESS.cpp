@@ -458,8 +458,8 @@ int main(int argc, char* argv[]) {
 
   while(fin) {
     uint64_t gid;
-    double c_prob,h0,h1,h2;
-    fin >> gid >> c_prob >> h0 >> h1 >> h2;
+    double c_prob,h0,h1,h2,b_lower,b_upper;
+    fin >> gid >> c_prob >> h0 >> h1 >> h2 >> b_lower >> b_upper;
     if (fin) {
       inputs.emplace_back(gid, c_prob, h0, h1, h2);
     }
