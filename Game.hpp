@@ -98,11 +98,11 @@ class Game {
     if (h[0] >= h[1] && h[0] >= h[2]) { Gi = 0; }
     else if (h[1] >= h[0] && h[1] >= h[2]) { Gi = 1; }
     else if (h[2] >= h[0] && h[2] >= h[1]) { Gi = 2; }
-    else { throw std::runtime_error("must not happen"); }
+    else { IC(h); throw std::runtime_error("must not happen"); }
 
     Reputation Gn = static_cast<Reputation>(Gi);
     Reputation Bn = strategy.rd.RepAt(Gn, Gn, Action::D);
-    if (Gn == Bn) { throw std::runtime_error("must not happen"); }
+    if (Gn == Bn) { IC(Inspect()); throw std::runtime_error("must not happen"); }
     int Bi = static_cast<int>(Bn);
     int Ni = 3 - Bi - Gi;
 
