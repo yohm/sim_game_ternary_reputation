@@ -1,3 +1,5 @@
 Pipfile.lock
 *.pdf
 *.png
+core_ESS_ids
+num_ESS.dat

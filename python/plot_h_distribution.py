@@ -20,7 +20,7 @@ plt.rcParams['axes.linewidth'] = 1.2
 plt.rcParams['savefig.dpi'] = 200
 plt.rcParams['figure.facecolor'] = 'white'
 # %%
-a = np.loadtxt("../,result/job_b1.1/ESS_ids")
+a = np.loadtxt("core_ESS_ids")
 
 # %%
 plt.clf()
