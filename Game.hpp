@@ -173,8 +173,12 @@ class Game {
         }
       }
 
-      if (b_lower_bound > b_upper_bound) break;
-      if (b_lower_bound <= lower_bound_max || b_upper_bound >= upper_bound_min) break;
+      if (b_lower_bound > b_upper_bound || b_lower_bound >= lower_bound_max || b_upper_bound <= upper_bound_min) {
+        // no ESS range is found between [upper_bound_min, lower_bound_max]
+        b_lower_bound = std::numeric_limits<double>::max();
+        b_upper_bound = std::numeric_limits<double>::min();
+        break;
+      }
     }
 
     return std::array<double,2>({b_lower_bound, b_upper_bound});

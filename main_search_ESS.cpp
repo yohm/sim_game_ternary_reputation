@@ -59,9 +59,9 @@ class Output {
 };
 
 struct Param {
-  double mu_e, mu_a, benefit, coop_prob_th;
-  Param(double _mu_e, double _mu_a, double _benefit, double _coop_prob_th) :
-  mu_e(_mu_e), mu_a(_mu_a), benefit(_benefit), coop_prob_th(_coop_prob_th) {};
+  double mu_e, mu_a, benefit_lower_max, benefit_upper_min, coop_prob_th;
+  Param(double _mu_e, double _mu_a, double _benefit_lower_max, double _benefit_upper_min, double _coop_prob_th) :
+  mu_e(_mu_e), mu_a(_mu_a), benefit_lower_max(_benefit_lower_max), benefit_upper_min(_benefit_upper_min), coop_prob_th(_coop_prob_th) {};
 };
 
 std::pair<std::vector<Output>, uint64_t> find_ESSs(const ReputationDynamics& rd, const Param& prm) {
@@ -72,8 +72,8 @@ std::pair<std::vector<Output>, uint64_t> find_ESSs(const ReputationDynamics& rd,
     num_total++;
     Game g(prm.mu_e, prm.mu_a, rd, ar);
     if (g.ResidentCoopProb() > prm.coop_prob_th) {
-      auto b_range = g.ESS_Benefit_Range(prm.benefit, prm.benefit);
-      if (b_range[0] <= prm.benefit && b_range[1] >= prm.benefit) {
+      auto b_range = g.ESS_Benefit_Range(prm.benefit_lower_max, prm.benefit_upper_min);
+      if (b_range[0] < b_range[1]) {
         Game new_g = g.NormalizedGame();
         ess_ids.emplace_back(new_g, b_range);
       }
@@ -158,7 +158,8 @@ Param BcastParameters(char* input_json_path) {
   return Param(
     j.at("mu_e").get<double>(),
     j.at("mu_a").get<double>(),
-    j.at("benefit").get<double>(),
+    j.at("benefit_lower_max").get<double>(),
+    j.at("benefit_upper_min").get<double>(),
     j.at("coop_prob_th").get<double>()
     );
 }
