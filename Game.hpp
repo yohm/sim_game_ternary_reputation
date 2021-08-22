@@ -141,13 +141,15 @@ class Game {
     }
     return std::make_pair(min, highest_mut);
   }
-  std::pair<double,double> ESS_Benefit_Range() const {
+  std::array<double,2> ESS_Benefit_Range(double lower_bound_max = std::numeric_limits<double>::max(), double upper_bound_min = std::numeric_limits<double>::min()) const {
+    // stop calculating b_range when lower_bound exceeds lower_bound_max
+    // or upper_bound go below upper_bound_min
     if (!resident_h_star_ready) throw std::runtime_error("cache is not ready");
     double res_res_coop = ResidentCoopProb();
     // IC(res_res_coop, MutantCoopProbs(strategy.ar));
 
-    double b_lower_all = std::numeric_limits<double>::min();
-    double b_upper_all = std::numeric_limits<double>::max();
+    double b_lower_bound = std::numeric_limits<double>::min();
+    double b_upper_bound = std::numeric_limits<double>::max();
 
     for (int i = 0; i < 512; i++) {
       if (i == strategy.ar.ID()) continue;
@@ -158,22 +160,24 @@ class Game {
 
       if (res_res_coop > res_mut_coop) {
         double b_lower = (res_res_coop - mut_res_coop) / (res_res_coop - res_mut_coop);
-        if (b_lower > b_lower_all) { b_lower_all = b_lower; }
+        if (b_lower > b_lower_bound) { b_lower_bound = b_lower; }
       }
       else if (res_res_coop < res_mut_coop) {
         double b_upper = (res_res_coop - mut_res_coop) / (res_res_coop - res_mut_coop);
-        if (b_upper < b_upper_all) { b_upper_all = b_upper; }  // update the upper bound of b
+        if (b_upper < b_upper_bound) { b_upper_bound = b_upper; }  // update the upper bound of b
       }
       else {  // res_coop_prob == mut_res_coop
         if (mut_res_coop <= res_res_coop) {  // cannot be ESS
-          b_lower_all = std::numeric_limits<double>::max();
-          b_upper_all = std::numeric_limits<double>::min();
-          break;
+          b_lower_bound = std::numeric_limits<double>::max();
+          b_upper_bound = std::numeric_limits<double>::min();
         }
       }
+
+      if (b_lower_bound > b_upper_bound) break;
+      if (b_lower_bound <= lower_bound_max || b_upper_bound >= upper_bound_min) break;
     }
 
-    return std::make_pair(b_lower_all, b_upper_all);
+    return std::array<double,2>({b_lower_bound, b_upper_bound});
   }
   v3d_t ResidentEqReputation() { CalcHStarResident(); return resident_h_star; } // equilibrium reputation of resident species
   v3d_t ResidentEqReputation() const {
