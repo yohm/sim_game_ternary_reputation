@@ -14,16 +14,16 @@ bool Close(double d1, double d2, double tolerance = 1.0e-2) {
 void PrintGame(Game& g) {
   g.ResidentEqReputation();
   std::cout << g.InspectMD();
-  {
-    auto a100 = g.CalcHStarFromInitialPoint({1.0, 0.0, 0.0});
-    auto a010 = g.CalcHStarFromInitialPoint({0.0, 1.0, 0.0});
-    auto a001 = g.CalcHStarFromInitialPoint({0.0, 0.0, 1.0});
-    IC(a100, a010, a001, g.ResidentEqReputation());
-  }
+  // {
+  //   auto a100 = g.CalcHStarFromInitialPoint({1.0, 0.0, 0.0});
+  //   auto a010 = g.CalcHStarFromInitialPoint({0.0, 1.0, 0.0});
+  //   auto a001 = g.CalcHStarFromInitialPoint({0.0, 0.0, 1.0});
+  //   IC(a100, a010, a001, g.ResidentEqReputation());
+  // }
   auto ess_b_range = g.ESS_Benefit_Range();
   IC(ess_b_range);
-  auto a1 = g.FindNegativePayoffDiff(1.05, 1.0), a2 = g.FindNegativePayoffDiff(1.1, 1.0), a3 = g.FindNegativePayoffDiff(3.0, 1.0);
-  IC(a1.first, a1.second.Inspect(), a2.first, a2.second.Inspect(), a3.first, a3.second.Inspect());
+  // auto a1 = g.FindNegativePayoffDiff(1.05, 1.0), a2 = g.FindNegativePayoffDiff(1.1, 1.0), a3 = g.FindNegativePayoffDiff(3.0, 1.0);
+  // IC(a1.first, a1.second.Inspect(), a2.first, a2.second.Inspect(), a3.first, a3.second.Inspect());
   PopulationFlow pf(g);
   std::cout << pf.InspectMD();
 }
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
           rd.SetRep(donor, recip, act, rep_correct);
           rd.SetRep(donor, recip, FlipAction(act), rep_wrong);
         }
-        Game g(0.02, 0.02, rd, ar);
+        Game g(0.001, 0.001, rd, ar);
         PrintGame(g);
       }
     }

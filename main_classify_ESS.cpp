@@ -144,11 +144,11 @@ std::string ClassifyType(uint64_t game_id) {
   auto classify_by_recovery_C1 = [&g,&desc,&key]() {
     // how B recover G in C1 norms
     if (
-      Match(g, {"BG:cG"}).empty()
+      Match(g, {"BG:cG", "NG:*G"}).empty()
       )
     {
       key += "R1.";
-      desc += ", BG:cG (R1: B->G)";
+      desc += ", BG:cG NG:*G (R1: B->G,N->G)";
     }
     else if (
       Match(g, {"BG:cN", "NG:cG"}).empty()
@@ -177,6 +177,13 @@ std::string ClassifyType(uint64_t game_id) {
     {
       key += "R24.";
       desc += ", BG:*N NG:cN NN:*G (R24: B->N,NN->G,dc)";
+    }
+    else if (
+      Match(g, {"BG:cG", "NG:*B"}).empty()
+      )
+    {
+      key += "R3.";
+      desc += ", BG:cG NG:*B (R3: N->B->G)";
     }
     else {
       key += "99.";
