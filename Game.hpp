@@ -63,18 +63,12 @@ class Game {
       ss << "  | (" << X << "->" << Y << ") " << std::get<0>(p) << std::get<1>(p) << ':' << std::get<2>(p) << " ";
       ss << ((i % 3 == 2) ? " |\n" : "");
     }
-    ss << "\n" << std::fixed << std::setprecision(3);
+    ss << "\n" << std::fixed << std::setprecision(4);
     ss << "- Cooperation Probability: " << ResidentCoopProb() << "\n"
        << "- Population:" << "\n"
        << "  - h_B: " << resident_h_star[0] << "\n"
        << "  - h_N: " << resident_h_star[1] << "\n"
        << "  - h_G: " << resident_h_star[2] << "\n";
-    Game g2(1.0e-3, 1.0e-3, ID());
-    ss << "- Cooperation Probability (mu=1e-3): " << g2.ResidentCoopProb() << "\n"
-       << "- Population (mu=1e-3):" << "\n"
-       << "  - h_B: " << g2.resident_h_star[0] << "\n"
-       << "  - h_N: " << g2.resident_h_star[1] << "\n"
-       << "  - h_G: " << g2.resident_h_star[2] << "\n";
 
     auto cont_payoff = ContinuationPayoff(0.5, 2.0, 1.0, mu_e);
     ss << "- Continuation payoff (w=0.5, b/c=2.0):" << "\n"

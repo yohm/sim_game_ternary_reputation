@@ -147,8 +147,15 @@ std::string ClassifyType(uint64_t game_id) {
       Match(g, {"BG:cG", "NG:*G"}).empty()
       )
     {
-      key += "R1.";
-      desc += ", BG:cG NG:*G (R1: B->G,N->G)";
+      key += "R11.";
+      desc += ", BG:cG NG:*G (R11: B->G,N->G)";
+    }
+    else if (
+      Match(g, {"BG:cG", "NG:*B"}).empty()
+      )
+    {
+      key += "R12.";
+      desc += ", BG:cG NG:*B (R12: N->B->G)";
     }
     else if (
       Match(g, {"BG:cN", "NG:cG"}).empty()
@@ -177,13 +184,6 @@ std::string ClassifyType(uint64_t game_id) {
     {
       key += "R24.";
       desc += ", BG:*N NG:cN NN:*G (R24: B->N,NN->G,dc)";
-    }
-    else if (
-      Match(g, {"BG:cG", "NG:*B"}).empty()
-      )
-    {
-      key += "R3.";
-      desc += ", BG:cG NG:*B (R3: N->B->G)";
     }
     else {
       key += "99.";
@@ -224,6 +224,46 @@ std::string ClassifyType(uint64_t game_id) {
     }
   };
 
+  auto classify_by_recovery_C2 = [&g,&desc,&key]() {
+    // how B recover G in C1 norms
+    if (
+      Match(g, {"BG:cG"}).empty()
+      )
+    {
+      key += "R1.";
+      desc += ", BG:cG (R1: B->G)";
+    }
+    else if (
+      Match(g, {"BG:cN"}).empty()
+      )
+    {
+      key += "R2.";
+      desc += ", BG:cN (R2: B->N)";
+    }
+    else {
+      key += "99.";
+    }
+  };
+  auto classify_by_punishment_C2 = [&g,&desc,&key]() {
+    if (
+      Match(g, {"GB:dG"}).empty()
+      )
+    {
+      key += "P1.";
+      desc += ", GB:dG (P1: G punisher is justified)";
+    }
+    else if (
+      Match(g, {"GB:dN"}).empty()
+      )
+    {
+      key += "P2.";
+      desc += ", GB:dN (P21: G punisher becomes N)";
+    }
+    else {
+      key += "99.";
+    }
+  };
+
   auto classify_by_recovery_path_C3 = [&g,&desc,&key]() {
     // recovery path
     if (
@@ -234,18 +274,13 @@ std::string ClassifyType(uint64_t game_id) {
     } else if (
       Match(g, {"BG:c[GN]:B", "BN:dB:B"}).empty()
       ) {
-      key += "R2.";
-      desc += ", BN:dB:B or BG:c[GN]:B (R2: B cooperates with G but not with N)";
+      key += "R21.";
+      desc += ", BN:dB:B or BG:c[GN]:B (R21: B cooperates with G but not with N)";
     } else if (
       Match(g, {"BG:dB:B", "BN:c[GN]:B"}).empty()
       ) {
-      key += "R3.";
-      desc += ", BN:c[GN]:B or BG:dB:B (R3: B cooperates with N but not with G)";
-    } else if (
-      Match(g, {"BG:c[GN]:B", "BN:d[GN]"}).empty()
-      ) {
-      key += "R4.";
-      desc += ", BG:c[GN] BN:d[GN] (R4: B cooperates G not with N, B may gain G when defecting N)";
+      key += "R22.";
+      desc += ", BN:c[GN]:B or BG:dB:B (R22: B cooperates with N but not with G)";
     } else {
       key += "99.";
       desc += ", unknown recovery pattern";
@@ -264,15 +299,15 @@ std::string ClassifyType(uint64_t game_id) {
       Match(g, {"GB:d[GN]", "NB:dB"}).empty()
       )
     {
-      key += "P2.";
-      desc += ", GB:d[NG] NB:dB (P2: N pusniher is not justified)";
+      key += "P21.";
+      desc += ", GB:d[NG] NB:dB (P21: N pusniher is not justified)";
     }
     else if (
       Match(g, {"GB:dB", "NB:d[GN]"}).empty()
       )
     {
-      key += "P3.";
-      desc += ", GB:dB, NB:d[GN] (P3: G punisher is not justified)";
+      key += "P22.";
+      desc += ", GB:dB, NB:d[GN] (P22: G punisher is not justified)";
     }
     else {
       key += "99.";
@@ -290,11 +325,35 @@ std::string ClassifyType(uint64_t game_id) {
   else if (
     std::abs(hN_exponent - 0.5) < tol && std::abs(hB_exponent - 1.0) < tol
     ) {
-    key += "C2.";
-    desc += "h_N=O(mu^1/2),h_B=O(mu) (C2: N~sqrt(mu))";
+    if (
+      Match(g, {"GG:cG", "GN:cG", "NG:cN", "NN:*G"}).empty()
+      )
+    {
+      key += "C21.";
+      desc += "h_N=O(mu^1/2),h_B=O(mu) (C2: N~sqrt(mu), GG:cG,GN:cG,NG:cN,NN:*G)";
+    }
+    else if (
+      Match(g, {"GG:cG", "GN:cN", "NG:cG", "NN:*G"}).empty()
+      )
+    {
+      key += "C22.";
+      desc += "h_N=O(mu^1/2),h_B=O(mu) (C2: N~sqrt(mu), GG:cG,GN:cN,NG:cG,NN:*G)";
+    }
+    else if (
+      Match(g, {"GG:cG", "GN:cN", "NG:cG", "NN:*B"}).empty()
+      )
+    {
+      key += "C23.";
+      desc += "h_N=O(mu^1/2),h_B=O(mu) (C2: N~sqrt(mu), GG:cG,GN:cN,NG:cG,NN:*B)";
+    }
+    else {
+      key += "C29.";
+      desc += "h_N=O(mu^1/2),h_B=O(mu) (C2: N~sqrt(mu))";
 
-    classify_by_punishment_C1();
-    classify_by_recovery_C1();
+    }
+
+    classify_by_punishment_C2();
+    classify_by_recovery_C2();
   }
   else if (
     std::abs(hN_exponent - 0.0) < tol && std::abs(hB_exponent - 1.0) < tol
