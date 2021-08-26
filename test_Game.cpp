@@ -14,6 +14,14 @@ bool Close(double d1, double d2, double tolerance = 1.0e-2) {
 void PrintGame(Game& g) {
   g.ResidentEqReputation();
   std::cout << g.InspectMD();
+  {
+    std::vector<double> mu_array({1.0e-2, 1.0e-3, 1.0e-4, 1.0e-5});
+    for (double mu: mu_array) {
+      Game g2(mu, mu, g.ID());
+      auto h = g2.ResidentEqReputation();
+      std::cout << mu << ',' << h[0] << ',' << h[1] << ',' << h[2] << ',' << g2.ResidentCoopProb() << std::endl;
+    }
+  }
   // {
   //   auto a100 = g.CalcHStarFromInitialPoint({1.0, 0.0, 0.0});
   //   auto a010 = g.CalcHStarFromInitialPoint({0.0, 1.0, 0.0});
@@ -36,7 +44,7 @@ int main(int argc, char *argv[]) {
     for (size_t i = 1; i < argc; i++) {
       if (std::regex_match(argv[i], re1)) {
         uint64_t id = std::stoull(argv[i]);
-        Game g(0.001, 0.001, id);
+        Game g(1.0e-3, 1.0e-3, id);
         PrintGame(g);
       }
       if (std::regex_match(argv[i], m, re2)) {
@@ -52,7 +60,7 @@ int main(int argc, char *argv[]) {
           rd.SetRep(donor, recip, act, rep_correct);
           rd.SetRep(donor, recip, FlipAction(act), rep_wrong);
         }
-        Game g(0.001, 0.001, rd, ar);
+        Game g(1.0e-3, 1.0e-3, rd, ar);
         PrintGame(g);
       }
     }
