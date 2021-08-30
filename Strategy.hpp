@@ -117,6 +117,21 @@ class ActionRule {
     return ans;
   }
 
+  bool IsSecondOrder() const {
+    bool ans = true;
+    for (size_t i = 0; i < 3; i++) {
+      Reputation rep_r = static_cast<Reputation>(i);
+      Action a = ActAt(Reputation::B, rep_r);
+      Action b = ActAt(Reputation::N, rep_r);
+      Action c = ActAt(Reputation::G, rep_r);
+      if (a != b || b != c) {
+        ans = false;
+        break;
+      }
+    }
+    return ans;
+  }
+
   std::array<Action,9> actions;
 };
 
@@ -214,6 +229,22 @@ class ReputationDynamics {
     return ans;
   }
 
+  bool IsSecondOrder() const {
+    bool ans = true;
+    for (size_t i = 0; i < 6; i++) {
+      Reputation rep_r = static_cast<Reputation>(i/2);
+      Action act = static_cast<Action>(i % 2);
+      Reputation a = RepAt(Reputation::B, rep_r, act);
+      Reputation b = RepAt(Reputation::N, rep_r, act);
+      Reputation c = RepAt(Reputation::G, rep_r, act);
+      if (a != b || b != c) {
+        ans = false;
+        break;
+      }
+    }
+    return ans;
+  }
+
   std::array<Reputation,18> reputations;
 };
 bool operator==(const ReputationDynamics& t1, const ReputationDynamics& t2) { return t1.ID() == t2.ID(); }
@@ -254,6 +285,9 @@ class Strategy {
   }
   Action Act(Reputation donor, Reputation recipient) const { return ar.ActAt(donor, recipient); }
   Reputation Assess(Reputation donor, Reputation recipient, Action act) const { return rd.RepAt(donor, recipient, act); }
+  bool IsSecondOrder() const {
+    return rd.IsSecondOrder() && ar.IsSecondOrder();
+  }
   static Strategy AllC() { return Strategy((387420488ull << 9ull) + 511ull); }
   static Strategy AllD() { return Strategy(0); }
 };

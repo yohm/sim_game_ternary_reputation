@@ -45,6 +45,22 @@ int main(int argc, char *argv[]) {
     assert(p3.ID() == p.ID());
   }
 
+  {  // testing IsSecondOrder
+    ActionRule p1({
+      Action::C, Action::D, Action::C,
+      Action::C, Action::D, Action::C,
+      Action::C, Action::D, Action::C,
+    });
+    assert( p1.IsSecondOrder() );
+
+    ActionRule p2({
+                    Action::C, Action::D, Action::C,
+                    Action::C, Action::D, Action::C,
+                    Action::D, Action::D, Action::C,
+                  });
+    assert( !p2.IsSecondOrder() );
+  }
+
   {
     // testing permutation of action rule
     ActionRule p({
@@ -85,6 +101,23 @@ int main(int argc, char *argv[]) {
     assert( rd != rd2 );
 
     assert(rd.Clone().ID() == rd.ID());
+  }
+
+  {
+    // testing IsSecondOrder of reputation dynamics
+    ReputationDynamics rd1({
+                            Reputation::B, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G,
+                            Reputation::B, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G,
+                            Reputation::B, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G
+                          });
+    assert( rd1.IsSecondOrder() );
+
+    ReputationDynamics rd2({
+                             Reputation::B, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G,
+                             Reputation::B, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G,
+                             Reputation::N, Reputation::N, Reputation::G, Reputation::B, Reputation::B, Reputation::G
+                           });
+    assert( !rd2.IsSecondOrder() );
   }
 
   {
