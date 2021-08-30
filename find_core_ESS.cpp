@@ -45,9 +45,18 @@ int main(int argc, char* argv[]) {
   }
 
   std::vector<input_t> inputs;
-  LoadFile(argv[1], inputs);
   std::cerr << "loading " << argv[1] << std::endl;
-  std::cerr << "  ESS size: " << inputs.size() << std::endl;
+  LoadFile(argv[1], inputs);
+  std::cerr << "  original ESS size: " << inputs.size() << std::endl;
+
+  std::sort(inputs.begin(), inputs.end(), [](const input_t& lhs, const input_t& rhs) {
+    return (lhs.gid < rhs.gid);
+  });
+  decltype(inputs)::iterator uniq_begin = std::unique(inputs.begin(), inputs.end(), [](const input_t& lhs, const input_t& rhs) {
+    return (lhs.gid == rhs.gid);
+  });
+  inputs.erase(uniq_begin, inputs.end());
+  std::cerr << "  unique ESS size: " << inputs.size() << std::endl;
 
   std::vector<size_t> ess_count(101, 0ul);
   std::vector<input_t> core_set;
