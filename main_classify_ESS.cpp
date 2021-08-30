@@ -382,10 +382,11 @@ std::string ClassifyType(uint64_t game_id) {
 }
 
 struct Input {
-  Input(uint64_t _gid, double _cprob, double h0, double h1, double h2) : gid(_gid), c_prob(_cprob), h({h0,h1,h2}) {};
+  Input(uint64_t _gid, double _cprob, double h0, double h1, double h2, double b_lower, double b_upper) : gid(_gid), c_prob(_cprob), h({h0,h1,h2}), b_range({b_lower, b_upper}) {};
   uint64_t gid;
   double c_prob;
   std::array<double,3> h;
+  std::array<double,2> b_range;
 };
 
 struct Output {
@@ -527,7 +528,7 @@ int main(int argc, char* argv[]) {
     double c_prob,h0,h1,h2,b_lower,b_upper;
     fin >> gid >> c_prob >> h0 >> h1 >> h2 >> b_lower >> b_upper;
     if (fin) {
-      inputs.emplace_back(gid, c_prob, h0, h1, h2);
+      inputs.emplace_back(gid, c_prob, h0, h1, h2, b_lower, b_upper);
     }
   }
 
@@ -568,10 +569,11 @@ int main(int argc, char* argv[]) {
 
     const int OUT_SIZE_TH = -1;
     std::string key = ExtractKeyFromType(kv.first);
+
     std::ofstream fout(std::string("ESS_") + key);
     int count = 0;
     for (const Input& input: kv.second) {
-      fout << input.gid << ' ' << input.c_prob << ' ' << input.h.at(0) << ' ' << input.h.at(1) << ' ' << input.h.at(2) << std::endl;
+      fout << input.gid << ' ' << input.c_prob << ' ' << input.h.at(0) << ' ' << input.h.at(1) << ' ' << input.h.at(2) << ' ' << input.b_range.at(0) << ' ' << input.b_range.at(1) << std::endl;
       count++;
       if (count == OUT_SIZE_TH) break;
     }
