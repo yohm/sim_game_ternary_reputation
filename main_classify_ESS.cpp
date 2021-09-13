@@ -546,6 +546,12 @@ int main(int argc, char* argv[]) {
     if (inputs.size() > 20 && i % (inputs.size()/20) == 0) { std::cerr << "progress: " << (i*100)/inputs.size() << " %" << std::endl; }
     Input input = inputs[i];
     std::string type = ClassifyType(input.gid);
+    if (input.c_prob == -1.0) {
+      // we need to calculate probs again
+      Game g(1.0e-3, 1.0e-3, input.gid);
+      input.c_prob = g.ResidentCoopProb();
+      input.h = g.ResidentEqReputation();
+    }
     int th = omp_get_thread_num();
     outs[th].map_type_inputs[type].emplace_back(input);
   }
