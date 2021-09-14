@@ -14,14 +14,15 @@ bool Close(double d1, double d2, double tolerance = 1.0e-2) {
 void PrintGame(Game& g) {
   g.ResidentEqReputation();
   std::cout << g.InspectMD();
-  {
-    std::vector<double> mu_array({1.0e-2, 1.0e-3, 1.0e-4, 1.0e-5});
-    for (double mu: mu_array) {
-      Game g2(mu, mu, g.ID());
-      auto h = g2.ResidentEqReputation();
-      std::cout << mu << ',' << h[0] << ',' << h[1] << ',' << h[2] << ',' << g2.ResidentCoopProb() << std::endl;
-    }
-  }
+  // {
+  //   std::cout << "- Equilibrium population" << std::endl;
+  //   std::vector<double> mu_array({1.0e-2, 1.0e-3, 1.0e-4, 1.0e-5});
+  //   for (double mu: mu_array) {
+  //     Game g2(mu, mu, g.ID());
+  //     auto h = g2.ResidentEqReputation();
+  //     std::cout << mu << ',' << h[0] << ',' << h[1] << ',' << h[2] << ',' << g2.ResidentCoopProb() << std::endl;
+  //   }
+  // }
   // {
   //   auto a100 = g.CalcHStarFromInitialPoint({1.0, 0.0, 0.0});
   //   auto a010 = g.CalcHStarFromInitialPoint({0.0, 1.0, 0.0});
@@ -29,9 +30,7 @@ void PrintGame(Game& g) {
   //   IC(a100, a010, a001, g.ResidentEqReputation());
   // }
   auto ess_b_range = g.ESS_Benefit_Range();
-  IC(ess_b_range);
-  // auto a1 = g.FindNegativePayoffDiff(1.05, 1.0), a2 = g.FindNegativePayoffDiff(1.1, 1.0), a3 = g.FindNegativePayoffDiff(3.0, 1.0);
-  // IC(a1.first, a1.second.Inspect(), a2.first, a2.second.Inspect(), a3.first, a3.second.Inspect());
+  std::cout << "- ESS b range: [" << ess_b_range[0] << ", " << ess_b_range[1] << "]" << std::endl;
   PopulationFlow pf(g);
   std::cout << pf.InspectMD();
 }

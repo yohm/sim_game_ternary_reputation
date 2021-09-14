@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
   std::sort(inputs.begin(), inputs.end(), [](const input_t& lhs, const input_t& rhs) {
     return (lhs.gid < rhs.gid);
   });
-  decltype(inputs)::iterator uniq_begin = std::unique(inputs.begin(), inputs.end(), [](const input_t& lhs, const input_t& rhs) {
+  auto uniq_begin = std::unique(inputs.begin(), inputs.end(), [](const input_t& lhs, const input_t& rhs) {
     return (lhs.gid == rhs.gid);
   });
   inputs.erase(uniq_begin, inputs.end());
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
   }
 
   for (size_t b = 11; b <= 100; b++) {
-    std::cout << b / 10.0 << ' ' << ess_count[b] << std::endl;
+    std::cout << (double)b / 10.0 << ' ' << ess_count[b] << std::endl;
   }
 
   return 0;
