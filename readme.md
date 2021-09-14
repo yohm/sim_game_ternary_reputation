@@ -216,4 +216,4 @@ Print the difference between two ID files.
 
 ## Results
 
-You can find the `core_ESS_ids` file in `result/` directory.
+You can find the `core_ESS_ids` file for `mu_a = mu_e = 1e-3`, `coop_prob_th = 0.99` in `result/` directory.
