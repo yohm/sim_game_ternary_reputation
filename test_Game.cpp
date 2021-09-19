@@ -36,32 +36,38 @@ void PrintGame(Game& g) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc > 1) {
+  if (argc >= 2 && argc <= 4) {
     std::regex re1(R"(\d+)");
     std::regex re2(R"(([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]),([cd][BNG][BNG]))");
     std::cmatch m;
-    for (size_t i = 1; i < argc; i++) {
-      if (std::regex_match(argv[i], re1)) {
-        uint64_t id = std::stoull(argv[i]);
-        Game g(1.0e-3, 1.0e-3, id);
-        PrintGame(g);
+    double mu_e = 1.0e-3, mu_a = 1.0e-3;
+    if (argc >= 3) {
+      mu_e = std::strtod(argv[2], nullptr);
+    }
+    if (argc >= 4) {
+      mu_a = std::strtod(argv[3], nullptr);
+    }
+
+    if (std::regex_match(argv[1], re1)) {
+      uint64_t id = std::stoull(argv[1]);
+      Game g(mu_e, mu_a, id);
+      PrintGame(g);
+    }
+    else if (std::regex_match(argv[1], m, re2)) {
+      ActionRule ar(0);
+      ReputationDynamics rd(0);
+      for (int i = 0; i < 9; i++) {
+        Reputation donor = static_cast<Reputation>(i/3);
+        Reputation recip = static_cast<Reputation>(i%3);
+        Action act = C2A(m[i+1].str()[0]);
+        Reputation rep_correct = C2R(m[i+1].str()[1]);  // reputation for the correct action
+        Reputation rep_wrong = C2R(m[i+1].str()[2]);    // reputation for the wrong action
+        ar.SetAction(donor, recip, act);
+        rd.SetRep(donor, recip, act, rep_correct);
+        rd.SetRep(donor, recip, FlipAction(act), rep_wrong);
       }
-      if (std::regex_match(argv[i], m, re2)) {
-        ActionRule ar(0);
-        ReputationDynamics rd(0);
-        for (int i = 0; i < 9; i++) {
-          Reputation donor = static_cast<Reputation>(i/3);
-          Reputation recip = static_cast<Reputation>(i%3);
-          Action act = C2A(m[i+1].str()[0]);
-          Reputation rep_correct = C2R(m[i+1].str()[1]);  // reputation for the correct action
-          Reputation rep_wrong = C2R(m[i+1].str()[2]);    // reputation for the wrong action
-          ar.SetAction(donor, recip, act);
-          rd.SetRep(donor, recip, act, rep_correct);
-          rd.SetRep(donor, recip, FlipAction(act), rep_wrong);
-        }
-        Game g(1.0e-3, 1.0e-3, rd, ar);
-        PrintGame(g);
-      }
+      Game g(mu_e, mu_a, rd, ar);
+      PrintGame(g);
     }
     return 0;
   }
