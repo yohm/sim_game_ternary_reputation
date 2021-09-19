@@ -25,8 +25,8 @@ a = np.loadtxt("core_ESS_ids")
 # %%
 plt.clf()
 n_bins = 100
-plt.hist(a[:,2], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label="Bad")
-plt.hist(a[:,4], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label="Good")
+plt.hist(a[:,2], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label=r"$h_B^{\ast}$")
+plt.hist(a[:,4], bins=n_bins, range=(0.0,1.0), log=True, alpha=0.9, density=False, label=r"$h_G^{\ast}$")
 plt.xlim((0.0,1.0))
 plt.xticks([0.0,0.5,1.0])
 plt.xlabel(r"$h_G^{\ast}, h_B^{\ast}$")
