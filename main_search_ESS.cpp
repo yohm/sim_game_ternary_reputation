@@ -48,20 +48,21 @@ std::vector<ActionRule> ActionRuleCandidates(const ReputationDynamics& rd) {
 
 class Output {
   public:
-  Output(uint64_t _gid, double _cprob, const std::array<double,3>& _h, const std::array<double,2>& _ess_range) : gid(_gid), cprob(_cprob), h(_h), ess_b_range(_ess_range) {};
-  Output(const Game& g, const std::array<double,2>& _ess_range) : gid(g.ID()), cprob(g.ResidentCoopProb()), h(g.ResidentEqReputation()),
-                                                                  ess_b_range(_ess_range) {};
+  Output() : gid(0), cprob(0.0), h({0.0, 0.0, 0.0}) {};
+  Output(uint64_t _gid, double _cprob, const std::array<double,3>& _h) : gid(_gid), cprob(_cprob), h(_h) {};
+  explicit Output(const Game& g) : gid(g.ID()), cprob(g.ResidentCoopProb()), h(g.ResidentEqReputation()) {};
   uint64_t gid;
   double cprob;
   std::array<double,3> h;
-  std::array<double,2> ess_b_range;
   bool operator<(const Output& rhs) const { return gid < rhs.gid; }
+
+  NLOHMANN_DEFINE_TYPE_INTRUSIVE(Output, gid, cprob, h);
 };
 
 struct Param {
-  double mu_e, mu_a, benefit_lower_max, benefit_upper_min, coop_prob_th;
-  Param(double _mu_e, double _mu_a, double _benefit_lower_max, double _benefit_upper_min, double _coop_prob_th) :
-  mu_e(_mu_e), mu_a(_mu_a), benefit_lower_max(_benefit_lower_max), benefit_upper_min(_benefit_upper_min), coop_prob_th(_coop_prob_th) {};
+  double mu_e, mu_a, benefit, coop_prob_th;
+  Param(double _mu_e, double _mu_a, double _benefit, double _coop_prob_th) :
+  mu_e(_mu_e), mu_a(_mu_a), benefit(_benefit), coop_prob_th(_coop_prob_th) {};
 };
 
 std::pair<std::vector<Output>, uint64_t> find_ESSs(const ReputationDynamics& rd, const Param& prm) {
@@ -72,10 +73,9 @@ std::pair<std::vector<Output>, uint64_t> find_ESSs(const ReputationDynamics& rd,
     num_total++;
     Game g(prm.mu_e, prm.mu_a, rd, ar);
     if (g.ResidentCoopProb() > prm.coop_prob_th) {
-      auto b_range = g.ESS_Benefit_Range(prm.benefit_lower_max, prm.benefit_upper_min);
-      if (b_range[0] < b_range[1]) {
+      if (g.IsESS(prm.benefit, 1.0)) {
         Game new_g = g.NormalizedGame();
-        ess_ids.emplace_back(new_g, b_range);
+        ess_ids.emplace_back(new_g);
       }
     }
   }
@@ -158,8 +158,7 @@ Param BcastParameters(char* input_json_path) {
   return Param(
     j.at("mu_e").get<double>(),
     j.at("mu_a").get<double>(),
-    j.at("benefit_lower_max").get<double>(),
-    j.at("benefit_upper_min").get<double>(),
+    j.at("benefit").get<double>(),
     j.at("coop_prob_th").get<double>()
     );
 }
@@ -204,8 +203,9 @@ int main(int argc, char *argv[]) {
     }
   };
   std::function<void(int64_t, const json&, const json&, caravan::Queue&)> on_result_receive = [&fout](int64_t task_id, const json& input, const json& output, caravan::Queue& q) {
-    for (auto o: output) {
-      fout << o.at(0).get<uint64_t>() << ' ' << o.at(1).get<double>() << ' ' << o.at(2).get<double>() << ' ' << o.at(3).get<double>() << ' ' << o.at(4).get<double>() << ' ' << o.at(5).get<double>() << ' ' << o.at(6).get<double>() << "\n";
+    for (auto j: output) {
+      const Output o = j.get<Output>();
+      fout << o.gid << ' ' << o.cprob << ' ' << o.h[0] << ' ' << o.h[1] << ' ' << o.h[2] << "\n";
     }
     size_t s = q.Size();
     if (s % 100 == 0) { std::cerr << "q.Size: " << s << std::endl; }
@@ -216,11 +216,7 @@ int main(int argc, char *argv[]) {
       repd_ids.emplace_back( in.get<uint64_t>() );
     }
     std::vector<Output> outs = SearchRepDsOpenMP(repd_ids, prm);
-    json result;
-    for (const Output& out: outs) {
-      result.emplace_back( std::make_tuple(out.gid, out.cprob, out.h[0], out.h[1], out.h[2], out.ess_b_range[0], out.ess_b_range[1]) );
-    }
-    return result;
+    return json(outs);
   };
 
   caravan::Start(on_init, on_result_receive, do_task, MPI_COMM_WORLD);

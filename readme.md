@@ -82,7 +82,7 @@ The content of `RD_list` looks like the following.
 ### main_search_ESS.out
 
 Executes the search of all the ESS pairs. Specify the file of reputation dynamics IDs (`RD_list`) as an argument.
-The second argument specifies the JSON file, which contains parameters such as the search range of benefit-to-cost ratio and error rates.
+The second argument specifies the JSON file, which contains parameters such as the benefit-to-cost ratio and error rates.
 The third argument specifies the chunk size. The inputs are divided into chunks of this size for distributing tasks.
 The ESS pairs are printed to the file `ESS_ids`.
 
@@ -91,8 +91,7 @@ The format of `_input.json` is the following:
 {
   "mu_e": 0.001,
   "mu_a": 0.001,
-  "benefit_lower_max": 10.0,
-  "benefit_upper_min": 1.0,
+  "benefit": 2.0,
   "coop_prob_th": 0.99
 }
 ```
@@ -106,25 +105,24 @@ Thus, the execution command should look like the following.
 
 ```shell
 export OMP_NUM_THREADS=12
-mpiexec ./main.out RD_list _input.json 1000
+mpiexec ./main_search_ESS.out RD_list _input.json 1000
 ```
 
 The format of the `ESS_ids` is the following.
 Each column denotes the GameID, the cooperation level, and fractions of B, N, G players `(h_B,h_N,h_G)`.
-The last columns denote the range of benefit-to-cost ratio between which the norm is ESS.
 To inspect the details of each result, execute `test_Game.out` with a GameID as its argument.
 
 ```
-74212345264 0.994066 0.00297165 0.498141 0.498887 2.00874 205741
-73669035440 0.994057 0.00297601 0.498144 0.49888 2.00875 206386
-73671292338 0.995535 0.00297897 0.498136 0.498885 1.5075 345.183
-73670528440 0.995535 0.00297894 0.498142 0.498879 4.01603 418153
-73671274928 0.994057 0.00297601 0.498144 0.49888 2.00875 206386
-73671296944 0.994057 0.00297603 0.498138 0.498886 2.00874 496.331
-74757468080 0.997009 0.0014965 0.498879 0.499625 2.00502 1.79769e+308
-74215326640 0.997009 0.0014965 0.499251 0.499252 2.00502 1.79769e+308
-74756721584 0.994065 0.00297168 0.498146 0.498883 2.00948 324.843
-74758961080 0.997755 0.00149724 0.498878 0.499625 4.01003 1.79769e+308
+74212345264 0.994066 0.00297165 0.498141 0.498887
+73669035440 0.994057 0.00297601 0.498144 0.49888
+73671292338 0.995535 0.00297897 0.498136 0.498885
+73670528440 0.995535 0.00297894 0.498142 0.498879
+73671274928 0.994057 0.00297601 0.498144 0.49888
+73671296944 0.994057 0.00297603 0.498138 0.498886
+74757468080 0.997009 0.0014965 0.498879 0.499625
+74215326640 0.997009 0.0014965 0.499251 0.499252
+74756721584 0.994065 0.00297168 0.498146 0.498883
+74758961080 0.997755 0.00149724 0.498878 0.499625
 ....
 ```
 

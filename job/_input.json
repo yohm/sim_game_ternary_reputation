@@ -1,7 +1,6 @@
 {
   "mu_e": 0.001,
   "mu_a": 0.001,
-  "benefit_lower_max": 10.0,
-  "benefit_upper_min": 1.0,
+  "benefit": 2.0,
   "coop_prob_th": 0.99
 }
