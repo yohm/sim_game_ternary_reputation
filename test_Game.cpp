@@ -31,6 +31,13 @@ void PrintGame(Game& g) {
   // }
   auto ess_b_range = g.ESS_Benefit_Range();
   std::cout << "- ESS b range: [" << ess_b_range[0] << ", " << ess_b_range[1] << "]" << std::endl;
+  std::vector<double> b_array = {1.1, 1.5, 2.0, 4.0, 10.0};
+  for (double b: b_array) {
+    auto pair = g.FindNegativePayoffDiff(b, 1.0);
+    IC(b, pair.first);
+    if (pair.first < 0.0) std::cout << pair.second.Inspect();
+  }
+
   PopulationFlow pf(g);
   std::cout << pf.InspectMD();
 }
