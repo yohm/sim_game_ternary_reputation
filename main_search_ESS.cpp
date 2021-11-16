@@ -108,7 +108,7 @@ std::vector<Output> SearchRepDsOpenMP(const std::vector<uint64_t>& repd_ids, con
   std::vector<std::vector<Output>> outs_thread(num_threads);
   // std::vector<uint64_t> ESS_ids;
 
-  #pragma omp parallel for shared(outs_thread,repd_ids,prm) default(none) schedule(dynamic)
+  #pragma omp parallel for shared(outs_thread,repd_ids,prm,std::cerr) default(none) schedule(dynamic)
   for (size_t i = 0; i <repd_ids.size(); i++) {
     int th = omp_get_thread_num();
     ReputationDynamics rd(repd_ids[i]);
