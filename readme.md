@@ -208,8 +208,16 @@ type: C3.P22.R1. h_N=O(1),h_G=O(mu) (C3: GN dominant), GB:dB, NB:d[GN] (P22: G p
 
 Print the difference between two ID files.
 
-```
+```shell
 ./diff_ESS.out ESS_ids ESS_ids2
+```
+
+### find_second_order_norms.out
+
+Print second-order norms from the list of ESS_id files.
+
+```shell
+./find_second_order_norms.out ESS_ids
 ```
 
 ## Results
