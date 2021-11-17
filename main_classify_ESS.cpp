@@ -14,6 +14,7 @@
 #include "Strategy.hpp"
 #include "Game.hpp"
 #include "HistoNormalBin.hpp"
+#include "Entry.hpp"
 
 
 // return unmatched pattern
@@ -381,16 +382,9 @@ std::string ClassifyType(uint64_t game_id) {
   return key + " " + desc;
 }
 
-struct Input {
-  Input(uint64_t _gid, double _cprob, double h0, double h1, double h2, double b_lower, double b_upper) : gid(_gid), c_prob(_cprob), h({h0,h1,h2}), b_range({b_lower, b_upper}) {};
-  uint64_t gid;
-  double c_prob;
-  std::array<double,3> h;
-  std::array<double,2> b_range;
-};
 
 struct Output {
-  std::map<std::string, std::vector<Input>> map_type_inputs;
+  std::map<std::string, std::vector<Entry>> map_type_inputs;
   using histo3_t = std::array<HistoNormalBin,3>;
   std::map<std::string,histo3_t> MakeHistoH() const {
     std::map<std::string, histo3_t> h_histos;
@@ -398,7 +392,7 @@ struct Output {
       std::string type = kv.first;
       const double bin = 0.01;
       h_histos.insert( std::make_pair(type, histo3_t({bin, bin, bin})));
-      for (const Input& in : kv.second) {
+      for (const Entry& in : kv.second) {
         h_histos.at(type).at(0).Add(in.h.at(0));
         h_histos.at(type).at(1).Add(in.h.at(1));
         h_histos.at(type).at(2).Add(in.h.at(2));
@@ -413,19 +407,17 @@ struct Output {
   }
   void SortByID() {
     for (auto kv: map_type_inputs) {
-      std::sort(kv.second.begin(), kv.second.end(), [](const Input &lhs, const Input &rhs) {
-        return (lhs.gid < rhs.gid);
-      });
+      std::sort(kv.second.begin(), kv.second.end());
     }
   }
 };
 
-void PrintHistogramPrescriptions(const std::vector<Input> inputs) {
+void PrintHistogramPrescriptions(const std::vector<Entry>& inputs) {
   std::vector< std::array<size_t,2> > histo_next_act(9, {0,0});
   std::vector< std::array<size_t,3> > histo_next_rep(9, {0, 0, 0});
   std::vector< std::array<size_t,3> > histo_other_rep(9, {0, 0, 0});
-  for (const Input& input: inputs) {
-    Game g(0.02, 0.02, input.gid);
+  for (const Entry& input: inputs) {
+    Game g(0.001, 0.001, input.gid);
     for (size_t n = 0; n < 9; n++) {
       Reputation donor = static_cast<Reputation >(n/3);
       Reputation recip = static_cast<Reputation >(n%3);
@@ -455,9 +447,9 @@ void PrintHistogramPrescriptions(const std::vector<Input> inputs) {
   }
 }
 
-void PrintContinuationPayoffOrders(const std::vector<Input> inputs) {
+void PrintContinuationPayoffOrders(const std::vector<Entry>& inputs) {
   std::map<std::string,int> order_count = {{"BNG", 0}, {"BGN", 0}, {"NBG", 0}, {"NGB", 0}, {"GBN", 0}, {"GNB", 0}};
-  for (const Input& input: inputs) {
+  for (const Entry& input: inputs) {
     Game g(0.02, 0.02, input.gid, input.c_prob, input.h);
     auto cont = g.ContinuationPayoff(0.5, 2.0, 1.0, 0.02);
     if (cont[0] <= cont[1] && cont[1] <= cont[2]) { order_count.at("BNG") += 1; }
@@ -515,23 +507,7 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("wrong number of arguments");
   }
 
-  std::ifstream fin(argv[1]);
-  if (!fin) {
-    std::cerr << "Failed to open file " << argv[1] << std::endl;
-    throw std::runtime_error("failed to open file");
-  }
-
-  std::vector<Input> inputs;
-
-  while(fin) {
-    uint64_t gid;
-    double c_prob,h0,h1,h2,b_lower,b_upper;
-    fin >> gid >> c_prob >> h0 >> h1 >> h2 >> b_lower >> b_upper;
-    if (fin) {
-      inputs.emplace_back(gid, c_prob, h0, h1, h2, b_lower, b_upper);
-    }
-  }
-
+  std::vector<Entry> inputs = Entry::LoadAndUniqSort(argv[1]);
 
   int num_threads;
   #pragma omp parallel shared(num_threads) default(none)
@@ -544,7 +520,7 @@ int main(int argc, char* argv[]) {
   #pragma omp parallel for shared(inputs,outs,std::cerr) default(none) schedule(dynamic, 1000)
   for (size_t i = 0; i < inputs.size(); i++) {
     if (inputs.size() > 20 && i % (inputs.size()/20) == 0) { std::cerr << "progress: " << (i*100)/inputs.size() << " %" << std::endl; }
-    Input input = inputs[i];
+    Entry input = inputs[i];
     std::string type = ClassifyType(input.gid);
     if (input.c_prob == -1.0) {
       // we need to calculate probs again
@@ -578,8 +554,8 @@ int main(int argc, char* argv[]) {
 
     std::ofstream fout(std::string("ESS_") + key);
     int count = 0;
-    for (const Input& input: kv.second) {
-      fout << input.gid << ' ' << input.c_prob << ' ' << input.h.at(0) << ' ' << input.h.at(1) << ' ' << input.h.at(2) << ' ' << input.b_range.at(0) << ' ' << input.b_range.at(1) << std::endl;
+    for (const Entry& input: kv.second) {
+      fout << input.gid << ' ' << input.c_prob << ' ' << input.h.at(0) << ' ' << input.h.at(1) << ' ' << input.h.at(2) << std::endl;
       count++;
       if (count == OUT_SIZE_TH) break;
     }

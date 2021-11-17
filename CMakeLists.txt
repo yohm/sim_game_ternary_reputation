@@ -17,7 +17,7 @@ add_executable(print_normalized_RD.out print_normalized_RD.cpp Strategy.hpp)
 add_executable(main_search_ESS.out main_search_ESS.cpp ${SOURCE_FILES})
 target_link_libraries(main_search_ESS.out PRIVATE OpenMP::OpenMP_CXX ${MPI_LIBRARIES})
 
-add_executable(main_classify_ESS.out main_classify_ESS.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
+add_executable(main_classify_ESS.out main_classify_ESS.cpp ${SOURCE_FILES} HistoNormalBin.hpp Entry.hpp)
 target_link_libraries(main_classify_ESS.out PRIVATE OpenMP::OpenMP_CXX)
 
 add_executable(find_second_order_norms.out find_second_order_norms.cpp ${SOURCE_FILES} HistoNormalBin.hpp Entry.hpp)
