@@ -132,14 +132,22 @@ Note that the labels of reputations are re-assigned according to the following c
 - When a `G` player defects against another `G` player, the donor gets a reputation other than `G` by nature of the cooperative ESSs. The reputation assigned in this case is `B`.
 - The remaining one is labeled as `N`.
 
+### sort_uniq_ESS.out
+
+The output of `main_search_ESS.out` may contain duplicate norms.
+`sort_uniq_ESS.out` sorts norms in the ascending order of ID and remove duplicates.
+
+```shell
+./sort_uniq_ESS.out ESS_ids > ESS_ids_sorted
+```
+
 ### find_core_ESS.out
 
-Find the "core set" of CESS from the list of `ESS_ids`.
-The core set is the set of the CESS that are ESS whenever benefit-to-cost ratio is in between `[1.1, 10]`.
+Find the "core set", namely the common subset, of CESS from the set of `ESS_ids_sorted` files.
 The output is printed to a file named `core_ESS_ids`.
 
 ```shell
-./find_core_ESS.out ESS_ids
+./find_core_ESS.out 1/ESS_ids_sorted 2/ESS_ids_sorted ....
 ```
 
 ### main_classify_ESS.out
@@ -194,14 +202,6 @@ type: C3.P22.R1. h_N=O(1),h_G=O(mu) (C3: GN dominant), GB:dB, NB:d[GN] (P22: G p
 (G->N) :   523260   87211|  162378       0  448093|  290125  200052  120294
 (G->G) :        0  610471|       0       0  610471|  610471       0       0
 ...
-```
-
-### sort_ESS.out
-
-Sort lines in `ESS_ids` or `DP_...` files in ascending order by GameID.
-
-```
-./sort_ESS.out DP_C1.P1.R1
 ```
 
 ### diff_ESS.out
