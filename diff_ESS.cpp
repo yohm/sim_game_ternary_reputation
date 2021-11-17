@@ -3,30 +3,8 @@
 #include <vector>
 #include <tuple>
 #include <icecream.hpp>
+#include "Entry.hpp"
 
-
-using input_t = std::tuple<uint64_t,double,double,double,double,double,double>;
-
-void LoadFileAndSort(const char* fname, std::vector<input_t>& inputs) {
-  std::ifstream fin(fname);
-  if (!fin) {
-    std::cerr << "Failed to open file " << fname << std::endl;
-    throw std::runtime_error("failed to open file");
-  }
-
-  while(fin) {
-    uint64_t gid;
-    double c_prob,h0,h1,h2,b_lower,b_upper;
-    fin >> gid >> c_prob >> h0 >> h1 >> h2 >> b_lower >> b_upper;
-    if (fin) {
-      inputs.emplace_back(gid, c_prob, h0, h1, h2, b_lower, b_upper);
-    }
-  }
-
-  std::sort(inputs.begin(), inputs.end(), [](const input_t& lhs, const input_t& rhs) {
-    return (std::get<0>(lhs) < std::get<0>(rhs));
-  });
-}
 
 int main(int argc, char* argv[]) {
   if (argc != 3) {
@@ -35,23 +13,18 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("wrong number of arguments");
   }
 
-  std::vector<input_t> inputs1, inputs2;
-  LoadFileAndSort(argv[1], inputs1);
-  LoadFileAndSort(argv[2], inputs2);
+  std::vector<Entry> inputs1 = Entry::LoadAndUniqSort(argv[1]), inputs2 = Entry::LoadAndUniqSort(argv[2]);
 
-  std::vector<input_t > left_only, right_only;
-  std::set_difference(inputs1.begin(), inputs1.end(), inputs2.begin(), inputs2.end(), std::inserter(left_only, left_only.end()),
-                      [](const input_t& lhs, const input_t& rhs) { return (std::get<0>(lhs) < std::get<0>(rhs)); });
-  std::set_difference(inputs2.begin(), inputs2.end(), inputs1.begin(), inputs1.end(), std::inserter(right_only, right_only.end()),
-                      [](const input_t& lhs, const input_t& rhs) { return (std::get<0>(lhs) < std::get<0>(rhs)); });
+  std::vector<Entry> left_only, right_only;
+
+  std::set_difference(inputs1.begin(), inputs1.end(), inputs2.begin(), inputs2.end(), std::inserter(left_only, left_only.end()));
+  std::set_difference(inputs2.begin(), inputs2.end(), inputs1.begin(), inputs1.end(), std::inserter(right_only, right_only.end()));
 
   for(const auto& in: left_only) {
-    std::cout << "< " << std::get<0>(in) << ' ' << std::get<1>(in) << ' ' << std::get<2>(in) << ' ' << std::get<3>(in)
-              << ' ' << std::get<4>(in) << ' ' << std::get<5>(in) << ' ' << std::get<6>(in) << "\n";
+    std::cout << "< " << in << "\n";
   }
   for(const auto& in: right_only) {
-    std::cout << "> " << std::get<0>(in) << ' ' << std::get<1>(in) << ' ' << std::get<2>(in) << ' ' << std::get<3>(in)
-              << ' ' << std::get<4>(in) << ' ' << std::get<5>(in) << ' ' << std::get<6>(in) << "\n";
+    std::cout << "> " << in << "\n";
   }
   std::cerr << "size: < " << left_only.size() << ", > " << right_only.size() << "\n";
 

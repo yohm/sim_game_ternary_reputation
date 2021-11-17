@@ -143,11 +143,11 @@ The output of `main_search_ESS.out` may contain duplicate norms.
 
 ### find_core_ESS.out
 
-Find the "core set", namely the common subset, of CESS from the set of `ESS_ids_sorted` files.
-The output is printed to a file named `core_ESS_ids`.
+Find the "core set", namely the common subset, of CESS from the set of `ESS_ids` files.
+You do not have to execute `sort_uniq_ESS.out` because sort and unique are also conducted in this command.
 
 ```shell
-./find_core_ESS.out 1/ESS_ids_sorted 2/ESS_ids_sorted ....
+./find_core_ESS.out 1/ESS_ids 2/ESS_ids .... > core_ESS_ids
 ```
 
 ### main_classify_ESS.out

@@ -20,9 +20,9 @@ target_link_libraries(main_classify_ESS.out PRIVATE OpenMP::OpenMP_CXX)
 
 add_executable(find_second_order_norms.out find_second_order_norms.cpp ${SOURCE_FILES} HistoNormalBin.hpp)
 
-add_executable(sort_uniq_ESSs.out sort_uniq_ESS.cpp)
-add_executable(diff_ESS.out diff_ESS.cpp)
-add_executable(find_core_ESS.out find_core_ESS.cpp)
+add_executable(sort_uniq_ESSs.out sort_uniq_ESS.cpp Entry.hpp)
+add_executable(diff_ESS.out diff_ESS.cpp Entry.hpp)
+add_executable(find_core_ESS.out find_core_ESS.cpp Entry.hpp)
 
 add_executable(print_normalized_RD.out print_normalized_RD.cpp Strategy.hpp)
 
