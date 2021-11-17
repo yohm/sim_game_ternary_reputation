@@ -42,7 +42,7 @@ size_t CheckFile(const char* fname) {
   for (size_t n = 0; n < inputs.size(); n++) {
     if (n % 1000 == 0) { std::cerr << "progress: " << n << " / " << inputs.size() << std::endl; }
     const input_t& input = inputs[n];
-    Game g(0.02, 0.02, input.id, input.coop_prob, input.h);
+    Game g(0.001, 0.001, input.id, input.coop_prob, input.h);
 
     const auto base = g.ResidentEqReputation();
     const int N = 5;
